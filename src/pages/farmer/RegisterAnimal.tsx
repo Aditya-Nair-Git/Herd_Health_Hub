@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SymptomSelect } from '@/components/ui/symptom-select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +45,18 @@ export default function RegisterAnimal() {
     symptom_3: '',
   });
 
+  const handleSymptomChange = (symptomNumber: 1 | 2 | 3, value: string) => {
+    const newValue = value === 'none' ? '' : value;
+    setFormData(prev => ({
+      ...prev,
+      [`symptom_${symptomNumber}`]: newValue
+    }));
+  };
+
+  const getSelectedSymptoms = () => {
+    return [formData.symptom_1, formData.symptom_2, formData.symptom_3].filter(Boolean);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -53,6 +66,9 @@ export default function RegisterAnimal() {
       age: formData.age ? parseInt(formData.age) : undefined,
       sex: formData.sex || undefined,
       milk_production_status: formData.milk_production_status || undefined,
+      symptom_1: formData.symptom_1 || undefined,
+      symptom_2: formData.symptom_2 || undefined,
+      symptom_3: formData.symptom_3 || undefined,
     };
 
     const result = animalSchema.safeParse(dataToValidate);
@@ -119,6 +135,8 @@ export default function RegisterAnimal() {
     setLoading(false);
   };
 
+  const selectedSymptoms = getSelectedSymptoms();
+
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto">
@@ -145,7 +163,7 @@ export default function RegisterAnimal() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select species" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="Cattle">Cattle</SelectItem>
                       <SelectItem value="Buffalo">Buffalo</SelectItem>
                       <SelectItem value="Goat">Goat</SelectItem>
@@ -174,7 +192,7 @@ export default function RegisterAnimal() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select sex" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
                     </SelectContent>
@@ -207,7 +225,7 @@ export default function RegisterAnimal() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border shadow-lg z-50">
                     <SelectItem value="Producing">Producing</SelectItem>
                     <SelectItem value="Not Producing">Not Producing</SelectItem>
                     <SelectItem value="Dry">Dry</SelectItem>
@@ -228,24 +246,34 @@ export default function RegisterAnimal() {
                 />
               </div>
 
-              {/* Symptoms */}
+              {/* Symptoms - Optional with Dropdown */}
               <div className="space-y-4">
-                <Label>Current Symptoms (if any)</Label>
+                <div>
+                  <Label>Current Symptoms (Optional)</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Select up to 3 symptoms if your animal is showing any signs of illness
+                  </p>
+                </div>
                 <div className="grid sm:grid-cols-3 gap-4">
-                  <Input
-                    placeholder="Symptom 1"
+                  <SymptomSelect
                     value={formData.symptom_1}
-                    onChange={(e) => setFormData({ ...formData, symptom_1: e.target.value })}
+                    onValueChange={(value) => handleSymptomChange(1, value)}
+                    excludeSymptoms={[formData.symptom_2, formData.symptom_3].filter(Boolean)}
+                    placeholder="Symptom 1"
                   />
-                  <Input
-                    placeholder="Symptom 2"
+                  <SymptomSelect
                     value={formData.symptom_2}
-                    onChange={(e) => setFormData({ ...formData, symptom_2: e.target.value })}
+                    onValueChange={(value) => handleSymptomChange(2, value)}
+                    excludeSymptoms={[formData.symptom_1, formData.symptom_3].filter(Boolean)}
+                    placeholder="Symptom 2"
+                    disabled={selectedSymptoms.length === 0 && !formData.symptom_1}
                   />
-                  <Input
-                    placeholder="Symptom 3"
+                  <SymptomSelect
                     value={formData.symptom_3}
-                    onChange={(e) => setFormData({ ...formData, symptom_3: e.target.value })}
+                    onValueChange={(value) => handleSymptomChange(3, value)}
+                    excludeSymptoms={[formData.symptom_1, formData.symptom_2].filter(Boolean)}
+                    placeholder="Symptom 3"
+                    disabled={selectedSymptoms.length < 1}
                   />
                 </div>
               </div>

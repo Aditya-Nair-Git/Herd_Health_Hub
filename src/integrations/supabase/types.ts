@@ -184,6 +184,77 @@ export type Database = {
         }
         Relationships: []
       }
+      schedules: {
+        Row: {
+          animal_id: string
+          appointment_date: string
+          appointment_type: Database["public"]["Enums"]["appointment_type"]
+          created_at: string
+          farmer_id: string
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+          vaccine_name: string | null
+          vet_id: string
+        }
+        Insert: {
+          animal_id: string
+          appointment_date: string
+          appointment_type: Database["public"]["Enums"]["appointment_type"]
+          created_at?: string
+          farmer_id: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+          vaccine_name?: string | null
+          vet_id: string
+        }
+        Update: {
+          animal_id?: string
+          appointment_date?: string
+          appointment_type?: Database["public"]["Enums"]["appointment_type"]
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+          vaccine_name?: string | null
+          vet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+        ]
+      }
+      symptoms_master: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -288,6 +359,8 @@ export type Database = {
     }
     Enums: {
       app_role: "farmer" | "vet" | "admin"
+      appointment_status: "scheduled" | "completed" | "cancelled" | "overdue"
+      appointment_type: "vaccination" | "follow_up"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -416,6 +489,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["farmer", "vet", "admin"],
+      appointment_status: ["scheduled", "completed", "cancelled", "overdue"],
+      appointment_type: ["vaccination", "follow_up"],
     },
   },
 } as const
