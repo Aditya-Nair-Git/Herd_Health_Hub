@@ -4,7 +4,14 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { SymptomSelect } from '@/components/ui/symptom-select';
+import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useSchedules } from '@/hooks/useSchedules';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -14,7 +21,9 @@ import {
   Stethoscope,
   AlertTriangle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Edit,
+  Syringe
 } from 'lucide-react';
 
 interface Animal {
@@ -54,9 +63,20 @@ interface VetEntry {
 
 export default function AnimalProfile() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [animal, setAnimal] = useState<Animal | null>(null);
   const [vetEntries, setVetEntries] = useState<VetEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [symptomDialogOpen, setSymptomDialogOpen] = useState(false);
+  const [savingSymptoms, setSavingSymptoms] = useState(false);
+  const [editSymptoms, setEditSymptoms] = useState({
+    symptom_1: '',
+    symptom_2: '',
+    symptom_3: '',
+  });
+
+  const { schedules, loading: schedulesLoading } = useSchedules({ animalId: id });
 
   useEffect(() => {
     if (id) {
@@ -72,11 +92,71 @@ export default function AnimalProfile() {
 
     if (!animalResult.error && animalResult.data) {
       setAnimal(animalResult.data);
+      setEditSymptoms({
+        symptom_1: animalResult.data.symptom_1 || '',
+        symptom_2: animalResult.data.symptom_2 || '',
+        symptom_3: animalResult.data.symptom_3 || '',
+      });
     }
     if (!vetResult.error && vetResult.data) {
       setVetEntries(vetResult.data);
     }
     setLoading(false);
+  };
+
+  const handleSymptomChange = (symptomNumber: 1 | 2 | 3, value: string) => {
+    const newValue = value === 'none' ? '' : value;
+    setEditSymptoms(prev => ({
+      ...prev,
+      [`symptom_${symptomNumber}`]: newValue
+    }));
+  };
+
+  const handleSaveSymptoms = async () => {
+    if (!animal || !user) return;
+    setSavingSymptoms(true);
+
+    // Update animal record
+    const { error: animalError } = await supabase
+      .from('animals')
+      .update({
+        symptom_1: editSymptoms.symptom_1 || null,
+        symptom_2: editSymptoms.symptom_2 || null,
+        symptom_3: editSymptoms.symptom_3 || null,
+      })
+      .eq('animal_id', animal.animal_id);
+
+    if (animalError) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update symptoms. Please try again.',
+        variant: 'destructive',
+      });
+      setSavingSymptoms(false);
+      return;
+    }
+
+    // Add farmer entry for symptom update
+    await supabase.from('farmer_entries').insert({
+      animal_id: animal.animal_id,
+      farmer_id: user.id,
+      species: animal.species,
+      sex: animal.sex,
+      age: animal.age,
+      symptom_1: editSymptoms.symptom_1 || null,
+      symptom_2: editSymptoms.symptom_2 || null,
+      symptom_3: editSymptoms.symptom_3 || null,
+      notes: 'Symptom update',
+    });
+
+    toast({
+      title: 'Symptoms Updated',
+      description: 'Animal symptoms have been saved successfully.',
+    });
+
+    setSymptomDialogOpen(false);
+    fetchAnimalData();
+    setSavingSymptoms(false);
   };
 
   if (loading) {
@@ -103,6 +183,7 @@ export default function AnimalProfile() {
   }
 
   const symptoms = [animal.symptom_1, animal.symptom_2, animal.symptom_3].filter(Boolean);
+  const upcomingSchedules = schedules.filter(s => s.status === 'scheduled');
 
   return (
     <DashboardLayout>
@@ -171,13 +252,65 @@ export default function AnimalProfile() {
               </CardContent>
             </Card>
 
-            {/* Health Status */}
+            {/* Health Status with Symptom Editing */}
             <Card className="shadow-card">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Stethoscope className="w-5 h-5 text-primary" />
                   Health Status
                 </CardTitle>
+                <Dialog open={symptomDialogOpen} onOpenChange={setSymptomDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Symptoms
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Update Symptoms</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Select up to 3 symptoms your animal is currently showing
+                      </p>
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label>Symptom 1</Label>
+                          <SymptomSelect
+                            value={editSymptoms.symptom_1}
+                            onValueChange={(value) => handleSymptomChange(1, value)}
+                            excludeSymptoms={[editSymptoms.symptom_2, editSymptoms.symptom_3].filter(Boolean)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Symptom 2</Label>
+                          <SymptomSelect
+                            value={editSymptoms.symptom_2}
+                            onValueChange={(value) => handleSymptomChange(2, value)}
+                            excludeSymptoms={[editSymptoms.symptom_1, editSymptoms.symptom_3].filter(Boolean)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Symptom 3</Label>
+                          <SymptomSelect
+                            value={editSymptoms.symptom_3}
+                            onValueChange={(value) => handleSymptomChange(3, value)}
+                            excludeSymptoms={[editSymptoms.symptom_1, editSymptoms.symptom_2].filter(Boolean)}
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={handleSaveSymptoms} 
+                        className="w-full" 
+                        disabled={savingSymptoms}
+                      >
+                        {savingSymptoms ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Save Symptoms
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent className="space-y-4">
                 {animal.body_temperature && (
@@ -190,7 +323,7 @@ export default function AnimalProfile() {
                   </div>
                 )}
 
-                {symptoms.length > 0 && (
+                {symptoms.length > 0 ? (
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Current Symptoms</p>
                     <div className="flex flex-wrap gap-2">
@@ -199,6 +332,8 @@ export default function AnimalProfile() {
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No symptoms reported</p>
                 )}
 
                 {animal.disease_diagnosis && (
@@ -273,6 +408,49 @@ export default function AnimalProfile() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Upcoming Appointments */}
+            {upcomingSchedules.length > 0 && (
+              <Card className="shadow-card border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Upcoming Appointments
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {upcomingSchedules.map((schedule) => (
+                    <div 
+                      key={schedule.id} 
+                      className="p-3 rounded-lg bg-secondary/50 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {schedule.appointment_type === 'vaccination' ? (
+                            <Syringe className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Calendar className="w-4 h-4 text-warning" />
+                          )}
+                          <span className="font-medium text-sm capitalize">
+                            {schedule.appointment_type === 'vaccination' ? 'Vaccination' : 'Follow-up'}
+                          </span>
+                        </div>
+                        <AppointmentTimer 
+                          appointmentDate={schedule.appointment_date} 
+                          status={schedule.status}
+                        />
+                      </div>
+                      {schedule.vaccine_name && (
+                        <p className="text-sm text-muted-foreground">{schedule.vaccine_name}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(schedule.appointment_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Vaccination Status */}
             <Card className="shadow-card">
               <CardHeader>
@@ -308,9 +486,15 @@ export default function AnimalProfile() {
                 </CardHeader>
                 <CardContent>
                   {animal.follow_up_date ? (
-                    <p className="font-medium">
-                      Scheduled for {new Date(animal.follow_up_date).toLocaleDateString()}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="font-medium">
+                        Scheduled for {new Date(animal.follow_up_date).toLocaleDateString()}
+                      </p>
+                      <AppointmentTimer 
+                        appointmentDate={animal.follow_up_date} 
+                        status="scheduled"
+                      />
+                    </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
                       Please contact your veterinarian to schedule

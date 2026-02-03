@@ -5,8 +5,10 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScheduleCard } from '@/components/ui/schedule-card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { useSchedules } from '@/hooks/useSchedules';
 import { 
   PawPrint, 
   AlertTriangle, 
@@ -14,7 +16,8 @@ import {
   Syringe, 
   Plus,
   ChevronRight,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 
 interface Animal {
@@ -33,6 +36,15 @@ export default function FarmerDashboard() {
   const { user, profile } = useAuth();
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const { 
+    schedules, 
+    loading: schedulesLoading, 
+    upcomingVaccinations, 
+    upcomingFollowUps,
+    overdueAppointments,
+    urgentAppointments
+  } = useSchedules({ farmerId: user?.id });
 
   useEffect(() => {
     if (user) {
@@ -54,19 +66,7 @@ export default function FarmerDashboard() {
 
   const totalAnimals = animals.length;
   const followUpsNeeded = animals.filter(a => a.follow_up).length;
-  const vaccinationsDue = animals.filter(a => {
-    if (!a.last_vaccination_date) return true;
-    const lastVac = new Date(a.last_vaccination_date);
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    return lastVac < sixMonthsAgo;
-  }).length;
   const activeIssues = animals.filter(a => a.disease_diagnosis && a.follow_up).length;
-
-  const upcomingFollowUps = animals
-    .filter(a => a.follow_up && a.follow_up_date)
-    .sort((a, b) => new Date(a.follow_up_date!).getTime() - new Date(b.follow_up_date!).getTime())
-    .slice(0, 5);
 
   if (loading) {
     return (
@@ -99,6 +99,27 @@ export default function FarmerDashboard() {
           </Link>
         </div>
 
+        {/* Urgent Alerts Banner */}
+        {(overdueAppointments.length > 0 || urgentAppointments.length > 0) && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="font-semibold text-destructive">Attention Required</p>
+                  <p className="text-sm text-muted-foreground">
+                    {overdueAppointments.length > 0 && `${overdueAppointments.length} overdue appointment(s)`}
+                    {overdueAppointments.length > 0 && urgentAppointments.length > 0 && ' • '}
+                    {urgentAppointments.length > 0 && `${urgentAppointments.length} appointment(s) due soon`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -108,16 +129,16 @@ export default function FarmerDashboard() {
             variant="primary"
           />
           <StatCard
-            title="Follow-ups Needed"
-            value={followUpsNeeded}
-            icon={<Calendar className="w-6 h-6" />}
-            variant={followUpsNeeded > 0 ? 'warning' : 'default'}
+            title="Upcoming Vaccinations"
+            value={upcomingVaccinations.length}
+            icon={<Syringe className="w-6 h-6" />}
+            variant={upcomingVaccinations.length > 0 ? 'warning' : 'default'}
           />
           <StatCard
-            title="Vaccinations Due"
-            value={vaccinationsDue}
-            icon={<Syringe className="w-6 h-6" />}
-            variant={vaccinationsDue > 0 ? 'warning' : 'default'}
+            title="Scheduled Follow-ups"
+            value={upcomingFollowUps.length}
+            icon={<Calendar className="w-6 h-6" />}
+            variant={followUpsNeeded > 0 ? 'warning' : 'default'}
           />
           <StatCard
             title="Active Health Issues"
@@ -127,12 +148,15 @@ export default function FarmerDashboard() {
           />
         </div>
 
-        {/* Quick Actions & Alerts */}
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Upcoming Follow-ups */}
+          {/* Upcoming Vaccinations */}
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold">Upcoming Follow-ups</CardTitle>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Syringe className="w-5 h-5 text-primary" />
+                Upcoming Vaccinations
+              </CardTitle>
               <Link to="/farmer/animals">
                 <Button variant="ghost" size="sm">
                   View All
@@ -141,31 +165,52 @@ export default function FarmerDashboard() {
               </Link>
             </CardHeader>
             <CardContent>
-              {upcomingFollowUps.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No upcoming follow-ups scheduled</p>
+              {schedulesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : upcomingVaccinations.length === 0 ? (
+                <div className="text-center py-8">
+                  <Syringe className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground text-sm">No upcoming vaccinations scheduled</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {upcomingFollowUps.map((animal) => (
-                    <Link 
-                      key={animal.animal_id} 
-                      to={`/farmer/animals/${animal.animal_id}`}
-                      className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-warning" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{animal.breed || animal.species}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {animal.follow_up_date && new Date(animal.follow_up_date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {animal.disease_diagnosis || 'Check-up'}
-                      </Badge>
-                    </Link>
+                  {upcomingVaccinations.slice(0, 5).map((schedule) => (
+                    <ScheduleCard 
+                      key={schedule.id} 
+                      schedule={schedule} 
+                      linkPrefix="/farmer/animals"
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Scheduled Follow-ups */}
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-warning" />
+                Scheduled Follow-ups
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {schedulesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : upcomingFollowUps.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4">No follow-ups scheduled</p>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingFollowUps.slice(0, 5).map((schedule) => (
+                    <ScheduleCard 
+                      key={schedule.id} 
+                      schedule={schedule} 
+                      linkPrefix="/farmer/animals"
+                    />
                   ))}
                 </div>
               )}
@@ -173,9 +218,9 @@ export default function FarmerDashboard() {
           </Card>
 
           {/* Recent Animals */}
-          <Card className="shadow-card">
+          <Card className="shadow-card lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold">Recent Animals</CardTitle>
+              <CardTitle className="text-lg font-semibold">My Animals</CardTitle>
               <Link to="/farmer/animals">
                 <Button variant="ghost" size="sm">
                   View All
@@ -195,8 +240,8 @@ export default function FarmerDashboard() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {animals.slice(0, 5).map((animal) => (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {animals.slice(0, 6).map((animal) => (
                     <Link 
                       key={animal.animal_id} 
                       to={`/farmer/animals/${animal.animal_id}`}

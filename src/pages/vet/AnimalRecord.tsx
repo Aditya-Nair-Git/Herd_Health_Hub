@@ -9,9 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { SymptomSelect } from '@/components/ui/symptom-select';
+import { AppointmentTimer } from '@/components/ui/appointment-timer';
+import { ScheduleDialog } from '@/components/scheduling/ScheduleDialog';
+import { EditScheduleDialog } from '@/components/scheduling/EditScheduleDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useSchedules } from '@/hooks/useSchedules';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -20,7 +25,9 @@ import {
   Pill,
   Stethoscope,
   Plus,
-  Loader2
+  Loader2,
+  Syringe,
+  Edit
 } from 'lucide-react';
 
 interface Animal {
@@ -40,6 +47,7 @@ interface Animal {
   follow_up_date: string | null;
   prescribed_medication: string | null;
   farmer_name: string;
+  farmer_id: string;
   created_at: string;
 }
 
@@ -75,6 +83,8 @@ export default function VetAnimalRecord() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const { schedules, loading: schedulesLoading, refetch: refetchSchedules } = useSchedules({ animalId: id });
 
   const [newEntry, setNewEntry] = useState({
     body_temperature: '',
@@ -113,6 +123,14 @@ export default function VetAnimalRecord() {
       setFarmerEntries(farmerResult.data);
     }
     setLoading(false);
+  };
+
+  const handleSymptomChange = (symptomNumber: 1 | 2 | 3, value: string) => {
+    const newValue = value === 'none' ? '' : value;
+    setNewEntry(prev => ({
+      ...prev,
+      [`symptom_${symptomNumber}`]: newValue
+    }));
   };
 
   const handleSubmitVisit = async () => {
@@ -204,6 +222,9 @@ export default function VetAnimalRecord() {
     );
   }
 
+  const upcomingSchedules = schedules.filter(s => s.status === 'scheduled');
+  const completedSchedules = schedules.filter(s => s.status === 'completed');
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -225,116 +246,129 @@ export default function VetAnimalRecord() {
             </div>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Visit
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Record Visit</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Body Temperature (°F)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      placeholder="e.g., 101.5"
-                      value={newEntry.body_temperature}
-                      onChange={(e) => setNewEntry({ ...newEntry, body_temperature: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Observed Symptoms</Label>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    <Input
-                      placeholder="Symptom 1"
-                      value={newEntry.symptom_1}
-                      onChange={(e) => setNewEntry({ ...newEntry, symptom_1: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Symptom 2"
-                      value={newEntry.symptom_2}
-                      onChange={(e) => setNewEntry({ ...newEntry, symptom_2: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Symptom 3"
-                      value={newEntry.symptom_3}
-                      onChange={(e) => setNewEntry({ ...newEntry, symptom_3: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Diagnosis</Label>
-                  <Input
-                    placeholder="Enter your diagnosis"
-                    value={newEntry.vet_diagnosis}
-                    onChange={(e) => setNewEntry({ ...newEntry, vet_diagnosis: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Prescribed Medication</Label>
-                  <Input
-                    placeholder="Medication name and dosage"
-                    value={newEntry.vet_prescribed_medication}
-                    onChange={(e) => setNewEntry({ ...newEntry, vet_prescribed_medication: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                  <Label htmlFor="continuing" className="cursor-pointer">Continuing Medication</Label>
-                  <Switch
-                    id="continuing"
-                    checked={newEntry.continuing_medication}
-                    onCheckedChange={(checked) => setNewEntry({ ...newEntry, continuing_medication: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                  <Label htmlFor="followup" className="cursor-pointer">Schedule Follow-up</Label>
-                  <Switch
-                    id="followup"
-                    checked={newEntry.follow_up}
-                    onCheckedChange={(checked) => setNewEntry({ ...newEntry, follow_up: checked })}
-                  />
-                </div>
-
-                {newEntry.follow_up && (
-                  <div className="space-y-2">
-                    <Label>Follow-up Date</Label>
-                    <Input
-                      type="date"
-                      value={newEntry.follow_up_date}
-                      onChange={(e) => setNewEntry({ ...newEntry, follow_up_date: e.target.value })}
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label>Additional Notes</Label>
-                  <Textarea
-                    placeholder="Any additional observations or notes"
-                    value={newEntry.notes}
-                    onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-
-                <Button onClick={handleSubmitVisit} className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Save Visit Record
+          <div className="flex gap-2">
+            <ScheduleDialog
+              animalId={animal.animal_id}
+              farmerId={animal.farmer_id}
+              vetId={user?.id || ''}
+              onScheduleCreated={refetchSchedules}
+            />
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Visit
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Record Visit</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Body Temperature (°F)</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 101.5"
+                        value={newEntry.body_temperature}
+                        onChange={(e) => setNewEntry({ ...newEntry, body_temperature: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Observed Symptoms</Label>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <SymptomSelect
+                        value={newEntry.symptom_1}
+                        onValueChange={(value) => handleSymptomChange(1, value)}
+                        excludeSymptoms={[newEntry.symptom_2, newEntry.symptom_3].filter(Boolean)}
+                        placeholder="Symptom 1"
+                      />
+                      <SymptomSelect
+                        value={newEntry.symptom_2}
+                        onValueChange={(value) => handleSymptomChange(2, value)}
+                        excludeSymptoms={[newEntry.symptom_1, newEntry.symptom_3].filter(Boolean)}
+                        placeholder="Symptom 2"
+                      />
+                      <SymptomSelect
+                        value={newEntry.symptom_3}
+                        onValueChange={(value) => handleSymptomChange(3, value)}
+                        excludeSymptoms={[newEntry.symptom_1, newEntry.symptom_2].filter(Boolean)}
+                        placeholder="Symptom 3"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Diagnosis</Label>
+                    <Input
+                      placeholder="Enter your diagnosis"
+                      value={newEntry.vet_diagnosis}
+                      onChange={(e) => setNewEntry({ ...newEntry, vet_diagnosis: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Prescribed Medication</Label>
+                    <Input
+                      placeholder="Medication name and dosage"
+                      value={newEntry.vet_prescribed_medication}
+                      onChange={(e) => setNewEntry({ ...newEntry, vet_prescribed_medication: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                    <Label htmlFor="continuing" className="cursor-pointer">Continuing Medication</Label>
+                    <Switch
+                      id="continuing"
+                      checked={newEntry.continuing_medication}
+                      onCheckedChange={(checked) => setNewEntry({ ...newEntry, continuing_medication: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                    <Label htmlFor="followup" className="cursor-pointer">Schedule Follow-up</Label>
+                    <Switch
+                      id="followup"
+                      checked={newEntry.follow_up}
+                      onCheckedChange={(checked) => setNewEntry({ ...newEntry, follow_up: checked })}
+                    />
+                  </div>
+
+                  {newEntry.follow_up && (
+                    <div className="space-y-2">
+                      <Label>Follow-up Date</Label>
+                      <Input
+                        type="date"
+                        value={newEntry.follow_up_date}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setNewEntry({ ...newEntry, follow_up_date: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Additional Notes</Label>
+                    <Textarea
+                      placeholder="Any additional observations or notes"
+                      value={newEntry.notes}
+                      onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button onClick={handleSubmitVisit} className="w-full" disabled={submitting}>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Save Visit Record
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -458,53 +492,122 @@ export default function VetAnimalRecord() {
                             <Badge variant="secondary">Continuing Meds</Badge>
                           )}
                         </div>
-                        {entry.vet_diagnosis && (
-                          <p className="text-sm mb-2">
-                            <span className="text-muted-foreground">Diagnosis:</span> {entry.vet_diagnosis}
-                          </p>
-                        )}
-                        {entry.vet_prescribed_medication && (
-                          <p className="text-sm mb-2">
-                            <span className="text-muted-foreground">Medication:</span> {entry.vet_prescribed_medication}
-                          </p>
-                        )}
-                        {entry.notes && (
-                          <p className="text-sm text-muted-foreground">{entry.notes}</p>
-                        )}
+                        <div className="space-y-2 text-sm">
+                          {entry.body_temperature && (
+                            <p><span className="text-muted-foreground">Temperature:</span> {entry.body_temperature}°F</p>
+                          )}
+                          {entry.vet_diagnosis && (
+                            <p><span className="text-muted-foreground">Diagnosis:</span> {entry.vet_diagnosis}</p>
+                          )}
+                          {entry.vet_prescribed_medication && (
+                            <p><span className="text-muted-foreground">Medication:</span> {entry.vet_prescribed_medication}</p>
+                          )}
+                          {(entry.symptom_1 || entry.symptom_2 || entry.symptom_3) && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
+                              ))}
+                            </div>
+                          )}
+                          {entry.notes && (
+                            <p className="text-muted-foreground mt-2">{entry.notes}</p>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Sidebar - Farmer Entries */}
-          <div className="space-y-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Farmer Reports</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {farmerEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No reports from farmer</p>
-                ) : (
+            {/* Farmer Reports */}
+            {farmerEntries.length > 0 && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">Farmer Reports</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-3">
-                    {farmerEntries.map((entry) => (
-                      <div key={entry.id} className="p-3 rounded-lg bg-secondary/50">
-                        <p className="text-sm font-medium mb-1">
+                    {farmerEntries.slice(0, 5).map((entry) => (
+                      <div key={entry.id} className="p-3 rounded-lg border bg-card">
+                        <p className="font-medium text-sm mb-2">
                           {new Date(entry.entry_date).toLocaleDateString()}
                         </p>
                         {(entry.symptom_1 || entry.symptom_2 || entry.symptom_3) && (
-                          <div className="flex flex-wrap gap-1 mb-2">
+                          <div className="flex flex-wrap gap-1">
                             {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
                               <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
                             ))}
                           </div>
                         )}
                         {entry.notes && (
-                          <p className="text-xs text-muted-foreground">{entry.notes}</p>
+                          <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Upcoming Appointments */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Scheduled Appointments
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {schedulesLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                ) : upcomingSchedules.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No upcoming appointments</p>
+                ) : (
+                  <div className="space-y-3">
+                    {upcomingSchedules.map((schedule) => (
+                      <div 
+                        key={schedule.id} 
+                        className="p-3 rounded-lg bg-secondary/50 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {schedule.appointment_type === 'vaccination' ? (
+                              <Syringe className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Calendar className="w-4 h-4 text-warning" />
+                            )}
+                            <span className="font-medium text-sm capitalize">
+                              {schedule.appointment_type === 'vaccination' ? 'Vaccination' : 'Follow-up'}
+                            </span>
+                          </div>
+                          <EditScheduleDialog
+                            schedule={schedule}
+                            onScheduleUpdated={refetchSchedules}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                        {schedule.vaccine_name && (
+                          <p className="text-sm text-muted-foreground">{schedule.vaccine_name}</p>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(schedule.appointment_date).toLocaleDateString()}
+                          </span>
+                          <AppointmentTimer 
+                            appointmentDate={schedule.appointment_date} 
+                            status={schedule.status}
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -512,6 +615,38 @@ export default function VetAnimalRecord() {
               </CardContent>
             </Card>
 
+            {/* Completed Appointments */}
+            {completedSchedules.length > 0 && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">Completed</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {completedSchedules.slice(0, 3).map((schedule) => (
+                      <div 
+                        key={schedule.id} 
+                        className="p-2 rounded-lg bg-success/10 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          {schedule.appointment_type === 'vaccination' ? (
+                            <Syringe className="w-4 h-4 text-success" />
+                          ) : (
+                            <Calendar className="w-4 h-4 text-success" />
+                          )}
+                          <span className="text-sm">{schedule.vaccine_name || 'Follow-up'}</span>
+                        </div>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs">
+                          Done
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Follow-up Status */}
             {animal.follow_up && (
               <Card className="shadow-card border-warning/50 bg-warning/5">
                 <CardHeader>
@@ -519,12 +654,18 @@ export default function VetAnimalRecord() {
                 </CardHeader>
                 <CardContent>
                   {animal.follow_up_date ? (
-                    <p className="font-medium">
-                      Scheduled: {new Date(animal.follow_up_date).toLocaleDateString()}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="font-medium">
+                        {new Date(animal.follow_up_date).toLocaleDateString()}
+                      </p>
+                      <AppointmentTimer 
+                        appointmentDate={animal.follow_up_date} 
+                        status="scheduled"
+                      />
+                    </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm">
-                      No date scheduled
+                    <p className="text-sm text-muted-foreground">
+                      No date scheduled yet
                     </p>
                   )}
                 </CardContent>

@@ -5,8 +5,10 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScheduleCard } from '@/components/ui/schedule-card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { useSchedules } from '@/hooks/useSchedules';
 import { 
   ClipboardList, 
   Calendar, 
@@ -14,7 +16,9 @@ import {
   Stethoscope, 
   ChevronRight,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Syringe,
+  Clock
 } from 'lucide-react';
 
 interface VetEntry {
@@ -36,6 +40,15 @@ export default function VetDashboard() {
   const { user, profile } = useAuth();
   const [entries, setEntries] = useState<VetEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { 
+    schedules, 
+    loading: schedulesLoading, 
+    upcomingVaccinations,
+    upcomingFollowUps,
+    overdueAppointments,
+    urgentAppointments
+  } = useSchedules({ vetId: user?.id });
 
   useEffect(() => {
     if (user) {
@@ -71,12 +84,11 @@ export default function VetDashboard() {
 
   const today = new Date().toISOString().split('T')[0];
   const todaysCases = entries.filter(e => e.visit_date === today).length;
-  const followUps = entries.filter(e => e.animals?.follow_up).length;
   const continuingMeds = entries.filter(e => e.continuing_medication).length;
   const totalCases = entries.length;
+  const pendingSchedules = schedules.filter(s => s.status === 'scheduled').length;
 
   const recentCases = entries.slice(0, 5);
-  const urgentFollowUps = entries.filter(e => e.animals?.follow_up).slice(0, 5);
 
   if (loading) {
     return (
@@ -101,6 +113,27 @@ export default function VetDashboard() {
           </p>
         </div>
 
+        {/* Urgent Alerts Banner */}
+        {(overdueAppointments.length > 0 || urgentAppointments.length > 0) && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="font-semibold text-destructive">Attention Required</p>
+                  <p className="text-sm text-muted-foreground">
+                    {overdueAppointments.length > 0 && `${overdueAppointments.length} overdue appointment(s)`}
+                    {overdueAppointments.length > 0 && urgentAppointments.length > 0 && ' • '}
+                    {urgentAppointments.length > 0 && `${urgentAppointments.length} appointment(s) due within 3 days`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -110,10 +143,10 @@ export default function VetDashboard() {
             variant="primary"
           />
           <StatCard
-            title="Pending Follow-ups"
-            value={followUps}
-            icon={<ClipboardList className="w-6 h-6" />}
-            variant={followUps > 0 ? 'warning' : 'default'}
+            title="Pending Appointments"
+            value={pendingSchedules}
+            icon={<Clock className="w-6 h-6" />}
+            variant={pendingSchedules > 0 ? 'warning' : 'default'}
           />
           <StatCard
             title="Continuing Medication"
@@ -129,10 +162,70 @@ export default function VetDashboard() {
           />
         </div>
 
-        {/* Cases and Follow-ups */}
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Recent Cases */}
+          {/* Scheduled Vaccinations */}
           <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Syringe className="w-5 h-5 text-primary" />
+                Scheduled Vaccinations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {schedulesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : upcomingVaccinations.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4">No vaccinations scheduled</p>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingVaccinations.slice(0, 5).map((schedule) => (
+                    <ScheduleCard 
+                      key={schedule.id} 
+                      schedule={schedule} 
+                      linkPrefix="/vet/animal"
+                      showFarmerName
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Scheduled Follow-ups */}
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-warning" />
+                Scheduled Follow-ups
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {schedulesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : upcomingFollowUps.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4">No follow-ups scheduled</p>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingFollowUps.slice(0, 5).map((schedule) => (
+                    <ScheduleCard 
+                      key={schedule.id} 
+                      schedule={schedule} 
+                      linkPrefix="/vet/animal"
+                      showFarmerName
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Cases */}
+          <Card className="shadow-card lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-semibold">Recent Cases</CardTitle>
               <Link to="/vet/cases">
@@ -154,7 +247,7 @@ export default function VetDashboard() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid sm:grid-cols-2 gap-3">
                   {recentCases.map((entry) => (
                     <Link 
                       key={entry.id} 
@@ -174,53 +267,18 @@ export default function VetDashboard() {
                           </p>
                         </div>
                       </div>
-                      {entry.vet_diagnosis && (
-                        <Badge variant="outline" className="text-xs">
-                          {entry.vet_diagnosis}
-                        </Badge>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pending Follow-ups */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-warning" />
-                Pending Follow-ups
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {urgentFollowUps.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No pending follow-ups</p>
-              ) : (
-                <div className="space-y-3">
-                  {urgentFollowUps.map((entry) => (
-                    <Link 
-                      key={entry.id} 
-                      to={`/vet/animal/${entry.animal_id}`}
-                      className="flex items-center justify-between p-3 rounded-lg bg-warning/10 hover:bg-warning/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-warning" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">
-                            {entry.animals?.breed || entry.animals?.species}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {entry.animals?.farmer_name}
-                          </p>
-                        </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {entry.vet_diagnosis && (
+                          <Badge variant="outline" className="text-xs">
+                            {entry.vet_diagnosis}
+                          </Badge>
+                        )}
+                        {entry.animals?.follow_up && (
+                          <Badge variant="secondary" className="text-xs bg-warning/20">
+                            Follow-up
+                          </Badge>
+                        )}
                       </div>
-                      <Badge variant="secondary" className="text-xs bg-warning/20">
-                        Follow-up
-                      </Badge>
                     </Link>
                   ))}
                 </div>
