@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduleCard } from '@/components/ui/schedule-card';
+import { TicketCard } from '@/components/tickets/TicketCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useTickets } from '@/hooks/useTickets';
 import { 
   ClipboardList, 
   Calendar, 
@@ -18,7 +20,8 @@ import {
   Loader2,
   AlertTriangle,
   Syringe,
-  Clock
+  Clock,
+  Ticket
 } from 'lucide-react';
 
 interface VetEntry {
@@ -49,6 +52,15 @@ export default function VetDashboard() {
     overdueAppointments,
     urgentAppointments
   } = useSchedules({ vetId: user?.id });
+
+  const { 
+    tickets, 
+    loading: ticketsLoading, 
+    assignedTickets, 
+    inProgressTickets 
+  } = useTickets({ vetId: user?.id });
+
+  const myActiveTickets = [...assignedTickets, ...inProgressTickets];
 
   useEffect(() => {
     if (user) {
@@ -135,7 +147,13 @@ export default function VetDashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard
+            title="Assigned Tickets"
+            value={myActiveTickets.length}
+            icon={<Ticket className="w-6 h-6" />}
+            variant={myActiveTickets.length > 0 ? 'warning' : 'success'}
+          />
           <StatCard
             title="Today's Cases"
             value={todaysCases}
@@ -161,6 +179,29 @@ export default function VetDashboard() {
             variant="default"
           />
         </div>
+
+        {/* Assigned Tickets */}
+        {myActiveTickets.length > 0 && (
+          <Card className="shadow-card border-warning/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-warning" />
+                Assigned Tickets
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {myActiveTickets.slice(0, 6).map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    linkPrefix="/vet/animal"
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">

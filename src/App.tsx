@@ -17,12 +17,18 @@ import FarmerDashboard from "./pages/farmer/Dashboard";
 import FarmerAnimals from "./pages/farmer/Animals";
 import RegisterAnimal from "./pages/farmer/RegisterAnimal";
 import AnimalProfile from "./pages/farmer/AnimalProfile";
+import FarmerTickets from "./pages/farmer/Tickets";
 
 // Vet pages
 import VetDashboard from "./pages/vet/Dashboard";
 import VetSearch from "./pages/vet/Search";
 import VetCases from "./pages/vet/Cases";
 import VetAnimalRecord from "./pages/vet/AnimalRecord";
+import VetSchedule from "./pages/vet/Schedule";
+
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminTickets from "./pages/admin/Tickets";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +99,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/farmer/tickets"
+        element={
+          <ProtectedRoute allowedRoles={['farmer', 'admin']}>
+            <FarmerTickets />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Vet routes */}
       <Route
@@ -127,13 +141,37 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/vet/schedule"
+        element={
+          <ProtectedRoute allowedRoles={['vet', 'admin']}>
+            <VetSchedule />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Admin placeholder - redirect to farmer for now */}
+      {/* Admin routes */}
       <Route
         path="/admin"
         element={
           <ProtectedRoute allowedRoles={['admin']}>
-            <FarmerDashboard />
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/tickets"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminTickets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/tickets/:id"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminTickets />
           </ProtectedRoute>
         }
       />

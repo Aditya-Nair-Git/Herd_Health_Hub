@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduleCard } from '@/components/ui/schedule-card';
+import { TicketCard } from '@/components/tickets/TicketCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useTickets } from '@/hooks/useTickets';
 import { 
   PawPrint, 
   AlertTriangle, 
@@ -17,7 +19,8 @@ import {
   Plus,
   ChevronRight,
   Loader2,
-  Clock
+  Clock,
+  ClipboardList
 } from 'lucide-react';
 
 interface Animal {
@@ -45,6 +48,16 @@ export default function FarmerDashboard() {
     overdueAppointments,
     urgentAppointments
   } = useSchedules({ farmerId: user?.id });
+
+  const { 
+    tickets, 
+    loading: ticketsLoading, 
+    createdTickets, 
+    assignedTickets, 
+    inProgressTickets 
+  } = useTickets({ farmerId: user?.id });
+
+  const activeTickets = [...createdTickets, ...assignedTickets, ...inProgressTickets];
 
   useEffect(() => {
     if (user) {
@@ -121,12 +134,18 @@ export default function FarmerDashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             title="Total Animals"
             value={totalAnimals}
             icon={<PawPrint className="w-6 h-6" />}
             variant="primary"
+          />
+          <StatCard
+            title="Active Tickets"
+            value={activeTickets.length}
+            icon={<ClipboardList className="w-6 h-6" />}
+            variant={activeTickets.length > 0 ? 'warning' : 'success'}
           />
           <StatCard
             title="Upcoming Vaccinations"
@@ -147,6 +166,35 @@ export default function FarmerDashboard() {
             variant={activeIssues > 0 ? 'destructive' : 'success'}
           />
         </div>
+
+        {/* Active Tickets Section */}
+        {activeTickets.length > 0 && (
+          <Card className="shadow-card border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-primary" />
+                Active Tickets
+              </CardTitle>
+              <Link to="/farmer/tickets">
+                <Button variant="ghost" size="sm">
+                  View All
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {activeTickets.slice(0, 3).map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    linkPrefix="/farmer/animals"
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">

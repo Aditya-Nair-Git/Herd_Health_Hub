@@ -8,10 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
+import { CreateTicketDialog } from '@/components/tickets/CreateTicketDialog';
+import { TicketCard } from '@/components/tickets/TicketCard';
+import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useTickets } from '@/hooks/useTickets';
+import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -23,7 +28,8 @@ import {
   CheckCircle,
   Loader2,
   Edit,
-  Syringe
+  Syringe,
+  ClipboardList
 } from 'lucide-react';
 
 interface Animal {
@@ -77,6 +83,10 @@ export default function AnimalProfile() {
   });
 
   const { schedules, loading: schedulesLoading } = useSchedules({ animalId: id });
+  const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
+  const { records: treatmentRecords, loading: treatmentsLoading } = useTreatmentRecords({ animalId: id });
+
+  const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
   useEffect(() => {
     if (id) {
@@ -210,6 +220,40 @@ export default function AnimalProfile() {
             </Badge>
           )}
         </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <CreateTicketDialog
+            animalId={animal.animal_id}
+            farmerId={user?.id || ''}
+            farmerName={animal.farmer_name}
+            onTicketCreated={refetchTickets}
+          />
+        </div>
+
+        {/* Active Tickets */}
+        {activeTickets.length > 0 && (
+          <Card className="shadow-card border-warning/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-warning" />
+                Active Tickets ({activeTickets.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {activeTickets.map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    linkPrefix="/farmer/animals"
+                    showAnimalInfo={false}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Info */}
@@ -361,6 +405,11 @@ export default function AnimalProfile() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Treatment History */}
+            {treatmentRecords.length > 0 && (
+              <TreatmentTimeline records={treatmentRecords} title="Treatment History" />
+            )}
 
             {/* Vet Visits */}
             <Card className="shadow-card">

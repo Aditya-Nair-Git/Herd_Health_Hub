@@ -13,7 +13,9 @@ import {
   Menu,
   Stethoscope,
   ClipboardList,
-  LayoutDashboard
+  LayoutDashboard,
+  Calendar,
+  Ticket
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -35,6 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const farmerLinks = [
     { href: '/farmer', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/farmer/animals', label: 'My Animals', icon: PawPrint },
+    { href: '/farmer/tickets', label: 'My Tickets', icon: Ticket },
     { href: '/farmer/register', label: 'Register Animal', icon: Plus },
   ];
 
@@ -42,13 +45,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: '/vet', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/vet/search', label: 'Search Animal', icon: Search },
     { href: '/vet/cases', label: 'My Cases', icon: ClipboardList },
+    { href: '/vet/schedule', label: 'My Schedule', icon: Calendar },
   ];
 
   const adminLinks = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin/farmers', label: 'Manage Farmers', icon: Users },
-    { href: '/admin/vets', label: 'Manage Vets', icon: Stethoscope },
-    { href: '/admin/reports', label: 'Reports', icon: FileText },
+    { href: '/admin/tickets', label: 'Manage Tickets', icon: ClipboardList },
   ];
 
   const links = userRole === 'farmer' ? farmerLinks : userRole === 'vet' ? vetLinks : adminLinks;

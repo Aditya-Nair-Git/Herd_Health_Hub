@@ -13,10 +13,15 @@ import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { ScheduleDialog } from '@/components/scheduling/ScheduleDialog';
 import { EditScheduleDialog } from '@/components/scheduling/EditScheduleDialog';
+import { TreatmentFormDialog } from '@/components/treatment/TreatmentFormDialog';
+import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
+import { TicketCard } from '@/components/tickets/TicketCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useTickets } from '@/hooks/useTickets';
+import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -27,7 +32,8 @@ import {
   Plus,
   Loader2,
   Syringe,
-  Edit
+  Edit,
+  ClipboardList
 } from 'lucide-react';
 
 interface Animal {
@@ -85,6 +91,10 @@ export default function VetAnimalRecord() {
   const [submitting, setSubmitting] = useState(false);
 
   const { schedules, loading: schedulesLoading, refetch: refetchSchedules } = useSchedules({ animalId: id });
+  const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
+  const { records: treatmentRecords, loading: treatmentsLoading, refetch: refetchTreatments } = useTreatmentRecords({ animalId: id });
+
+  const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
   const [newEntry, setNewEntry] = useState({
     body_temperature: '',
