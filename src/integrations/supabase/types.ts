@@ -255,6 +255,144 @@ export type Database = {
         }
         Relationships: []
       }
+      tickets: {
+        Row: {
+          admin_notes: string | null
+          animal_id: string
+          assigned_slot_id: string | null
+          assigned_vet_id: string | null
+          complaint: string
+          created_at: string
+          farmer_id: string
+          farmer_name: string
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          status: Database["public"]["Enums"]["ticket_status"]
+          symptom_1: string | null
+          symptom_2: string | null
+          symptom_3: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          animal_id: string
+          assigned_slot_id?: string | null
+          assigned_vet_id?: string | null
+          complaint: string
+          created_at?: string
+          farmer_id: string
+          farmer_name: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          status?: Database["public"]["Enums"]["ticket_status"]
+          symptom_1?: string | null
+          symptom_2?: string | null
+          symptom_3?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          animal_id?: string
+          assigned_slot_id?: string | null
+          assigned_vet_id?: string | null
+          complaint?: string
+          created_at?: string
+          farmer_id?: string
+          farmer_name?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          status?: Database["public"]["Enums"]["ticket_status"]
+          symptom_1?: string | null
+          symptom_2?: string | null
+          symptom_3?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "tickets_assigned_slot_fkey"
+            columns: ["assigned_slot_id"]
+            isOneToOne: false
+            referencedRelation: "vet_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_records: {
+        Row: {
+          animal_id: string
+          appointment_date: string
+          continuing_medication: boolean | null
+          created_at: string
+          dosage: string | null
+          final_diagnosis: string | null
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          id: string
+          prescribed_medication: string | null
+          symptoms_observed: string | null
+          ticket_id: string | null
+          updated_at: string
+          vet_id: string
+          vet_notes: string | null
+        }
+        Insert: {
+          animal_id: string
+          appointment_date?: string
+          continuing_medication?: boolean | null
+          created_at?: string
+          dosage?: string | null
+          final_diagnosis?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          prescribed_medication?: string | null
+          symptoms_observed?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          vet_id: string
+          vet_notes?: string | null
+        }
+        Update: {
+          animal_id?: string
+          appointment_date?: string
+          continuing_medication?: boolean | null
+          created_at?: string
+          dosage?: string | null
+          final_diagnosis?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          prescribed_medication?: string | null
+          symptoms_observed?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          vet_id?: string
+          vet_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_records_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "treatment_records_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -341,6 +479,53 @@ export type Database = {
           },
         ]
       }
+      vet_slots: {
+        Row: {
+          assigned_ticket_id: string | null
+          created_at: string
+          end_time: string
+          id: string
+          notes: string | null
+          slot_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["slot_status"]
+          updated_at: string
+          vet_id: string
+        }
+        Insert: {
+          assigned_ticket_id?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          slot_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["slot_status"]
+          updated_at?: string
+          vet_id: string
+        }
+        Update: {
+          assigned_ticket_id?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          slot_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["slot_status"]
+          updated_at?: string
+          vet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vet_slots_assigned_ticket_id_fkey"
+            columns: ["assigned_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -361,6 +546,14 @@ export type Database = {
       app_role: "farmer" | "vet" | "admin"
       appointment_status: "scheduled" | "completed" | "cancelled" | "overdue"
       appointment_type: "vaccination" | "follow_up"
+      slot_status: "available" | "booked" | "blocked"
+      ticket_priority: "normal" | "urgent" | "emergency"
+      ticket_status:
+        | "created"
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -491,6 +684,15 @@ export const Constants = {
       app_role: ["farmer", "vet", "admin"],
       appointment_status: ["scheduled", "completed", "cancelled", "overdue"],
       appointment_type: ["vaccination", "follow_up"],
+      slot_status: ["available", "booked", "blocked"],
+      ticket_priority: ["normal", "urgent", "emergency"],
+      ticket_status: [
+        "created",
+        "assigned",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
     },
   },
 } as const
