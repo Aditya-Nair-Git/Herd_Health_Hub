@@ -8,6 +8,21 @@ interface TreatmentTimelineProps {
   title?: string;
 }
 
+const frequencyLabels: Record<string, string> = {
+  once_daily: 'Once Daily',
+  twice_daily: 'Twice Daily',
+  three_times_daily: '3x Daily',
+  every_other_day: 'Every Other Day',
+  weekly: 'Weekly',
+  as_needed: 'As Needed',
+};
+
+const courseStatusConfig: Record<string, { label: string; className: string }> = {
+  ongoing: { label: 'Ongoing', className: 'bg-warning/20 text-warning-foreground' },
+  completed: { label: 'Completed', className: 'bg-success/20 text-success-foreground' },
+  discontinued: { label: 'Discontinued', className: 'bg-destructive/20 text-destructive' },
+};
+
 export function TreatmentTimeline({ records, title = "Treatment History" }: TreatmentTimelineProps) {
   if (records.length === 0) {
     return (
@@ -39,7 +54,7 @@ export function TreatmentTimeline({ records, title = "Treatment History" }: Trea
           <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
           
           <div className="space-y-6">
-            {records.map((record, index) => (
+            {records.map((record) => (
               <div key={record.id} className="relative pl-10">
                 {/* Timeline dot */}
                 <div className="absolute left-2 top-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -83,13 +98,35 @@ export function TreatmentTimeline({ records, title = "Treatment History" }: Trea
                   )}
 
                   {record.prescribed_medication && (
-                    <div className="flex items-start gap-2 p-2 rounded bg-primary/5 mb-2">
-                      <Pill className="w-4 h-4 text-primary mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">{record.prescribed_medication}</p>
-                        {record.dosage && (
-                          <p className="text-xs text-muted-foreground">{record.dosage}</p>
-                        )}
+                    <div className="p-2 rounded bg-primary/5 mb-2">
+                      <div className="flex items-start gap-2">
+                        <Pill className="w-4 h-4 text-primary mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{record.prescribed_medication}</p>
+                          {record.dosage && (
+                            <p className="text-xs text-muted-foreground">{record.dosage}</p>
+                          )}
+                          {/* Medication course info */}
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {record.dosage_frequency && (
+                              <Badge variant="outline" className="text-xs">
+                                {frequencyLabels[record.dosage_frequency] || record.dosage_frequency}
+                              </Badge>
+                            )}
+                            {record.course_completion_status && courseStatusConfig[record.course_completion_status] && (
+                              <Badge variant="outline" className={`text-xs ${courseStatusConfig[record.course_completion_status].className}`}>
+                                {courseStatusConfig[record.course_completion_status].label}
+                              </Badge>
+                            )}
+                          </div>
+                          {(record.medication_start_date || record.medication_end_date) && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {record.medication_start_date && `From: ${new Date(record.medication_start_date).toLocaleDateString()}`}
+                              {record.medication_start_date && record.medication_end_date && ' — '}
+                              {record.medication_end_date && `To: ${new Date(record.medication_end_date).toLocaleDateString()}`}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

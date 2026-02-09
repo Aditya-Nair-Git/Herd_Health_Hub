@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Loader2 } from 'lucide-react';
@@ -36,6 +37,11 @@ export function TreatmentFormDialog({
     follow_up_required: false,
     follow_up_date: '',
     vet_notes: '',
+    // Medication course tracking (Part 3)
+    medication_start_date: new Date().toISOString().split('T')[0],
+    medication_end_date: '',
+    dosage_frequency: '',
+    course_completion_status: 'ongoing' as 'ongoing' | 'completed' | 'discontinued',
   });
 
   const handleSubmit = async () => {
@@ -48,9 +54,33 @@ export function TreatmentFormDialog({
       return;
     }
 
+    // Validate medication date ranges
+    if (formData.medication_start_date && formData.medication_end_date) {
+      if (new Date(formData.medication_end_date) < new Date(formData.medication_start_date)) {
+        toast({
+          title: 'Error',
+          description: 'Medication end date cannot be before start date',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Validate follow-up date not in past
+    if (formData.follow_up_required && formData.follow_up_date) {
+      if (new Date(formData.follow_up_date) < new Date(new Date().toISOString().split('T')[0])) {
+        toast({
+          title: 'Error',
+          description: 'Follow-up date cannot be in the past',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setSubmitting(true);
 
-    // Insert treatment record
+    // Insert treatment record with medication tracking fields
     const { error: treatmentError } = await supabase.from('treatment_records').insert({
       ticket_id: ticketId || null,
       animal_id: animalId,
@@ -63,6 +93,10 @@ export function TreatmentFormDialog({
       follow_up_required: formData.follow_up_required,
       follow_up_date: formData.follow_up_date || null,
       vet_notes: formData.vet_notes || null,
+      medication_start_date: formData.prescribed_medication ? formData.medication_start_date : null,
+      medication_end_date: formData.medication_end_date || null,
+      dosage_frequency: formData.dosage_frequency || null,
+      course_completion_status: formData.prescribed_medication ? formData.course_completion_status : null,
     });
 
     if (treatmentError) {
@@ -83,12 +117,16 @@ export function TreatmentFormDialog({
         .eq('id', ticketId);
     }
 
-    // Update animal record
+    // Update animal record and status
+    const animalStatus = formData.follow_up_required ? 'under_treatment' : 
+                          formData.continuing_medication ? 'recovering' : 'healthy';
+    
     await supabase.from('animals').update({
       disease_diagnosis: formData.final_diagnosis,
       prescribed_medication: formData.prescribed_medication || null,
       follow_up: formData.follow_up_required,
       follow_up_date: formData.follow_up_date || null,
+      animal_status: animalStatus,
     }).eq('animal_id', animalId);
 
     // Create follow-up schedule if required
@@ -126,6 +164,10 @@ export function TreatmentFormDialog({
       follow_up_required: false,
       follow_up_date: '',
       vet_notes: '',
+      medication_start_date: new Date().toISOString().split('T')[0],
+      medication_end_date: '',
+      dosage_frequency: '',
+      course_completion_status: 'ongoing',
     });
     onTreatmentSaved?.();
     setSubmitting(false);
@@ -182,6 +224,70 @@ export function TreatmentFormDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
             />
           </div>
+
+          {/* Medication Course Tracking Section */}
+          {formData.prescribed_medication && (
+            <div className="space-y-4 p-4 rounded-lg border bg-secondary/30">
+              <p className="text-sm font-semibold">Medication Course Tracking</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.medication_start_date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, medication_start_date: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.medication_end_date}
+                    min={formData.medication_start_date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, medication_end_date: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Dosage Frequency</Label>
+                <Select
+                  value={formData.dosage_frequency}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, dosage_frequency: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once_daily">Once Daily</SelectItem>
+                    <SelectItem value="twice_daily">Twice Daily</SelectItem>
+                    <SelectItem value="three_times_daily">Three Times Daily</SelectItem>
+                    <SelectItem value="every_other_day">Every Other Day</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="as_needed">As Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Course Status</Label>
+                <Select
+                  value={formData.course_completion_status}
+                  onValueChange={(value: 'ongoing' | 'completed' | 'discontinued') => setFormData(prev => ({ ...prev, course_completion_status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ongoing">Ongoing</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="discontinued">Discontinued</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
             <Label htmlFor="continuing" className="cursor-pointer">Continuing Medication</Label>

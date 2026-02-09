@@ -15,6 +15,11 @@ export interface TreatmentRecord {
   follow_up_required: boolean;
   follow_up_date: string | null;
   vet_notes: string | null;
+  medication_start_date: string | null;
+  medication_end_date: string | null;
+  dosage_frequency: string | null;
+  course_completion_status: string | null;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
   animals?: {

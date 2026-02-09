@@ -18,6 +18,9 @@ export type Database = {
         Row: {
           age: number | null
           animal_id: string
+          animal_status:
+            | Database["public"]["Enums"]["animal_health_status"]
+            | null
           body_temperature: number | null
           breed: string | null
           created_at: string
@@ -26,6 +29,7 @@ export type Database = {
           farmer_name: string
           follow_up: boolean | null
           follow_up_date: string | null
+          is_active: boolean | null
           last_vaccination_date: string | null
           milk_production_status: string | null
           prescribed_medication: string | null
@@ -42,6 +46,9 @@ export type Database = {
         Insert: {
           age?: number | null
           animal_id?: string
+          animal_status?:
+            | Database["public"]["Enums"]["animal_health_status"]
+            | null
           body_temperature?: number | null
           breed?: string | null
           created_at?: string
@@ -50,6 +57,7 @@ export type Database = {
           farmer_name: string
           follow_up?: boolean | null
           follow_up_date?: string | null
+          is_active?: boolean | null
           last_vaccination_date?: string | null
           milk_production_status?: string | null
           prescribed_medication?: string | null
@@ -66,6 +74,9 @@ export type Database = {
         Update: {
           age?: number | null
           animal_id?: string
+          animal_status?:
+            | Database["public"]["Enums"]["animal_health_status"]
+            | null
           body_temperature?: number | null
           breed?: string | null
           created_at?: string
@@ -74,6 +85,7 @@ export type Database = {
           farmer_name?: string
           follow_up?: boolean | null
           follow_up_date?: string | null
+          is_active?: boolean | null
           last_vaccination_date?: string | null
           milk_production_status?: string | null
           prescribed_medication?: string | null
@@ -266,6 +278,7 @@ export type Database = {
           farmer_id: string
           farmer_name: string
           id: string
+          is_active: boolean | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           status: Database["public"]["Enums"]["ticket_status"]
           symptom_1: string | null
@@ -283,6 +296,7 @@ export type Database = {
           farmer_id: string
           farmer_name: string
           id?: string
+          is_active?: boolean | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
           symptom_1?: string | null
@@ -300,6 +314,7 @@ export type Database = {
           farmer_id?: string
           farmer_name?: string
           id?: string
+          is_active?: boolean | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]
           symptom_1?: string | null
@@ -329,12 +344,17 @@ export type Database = {
           animal_id: string
           appointment_date: string
           continuing_medication: boolean | null
+          course_completion_status: string | null
           created_at: string
           dosage: string | null
+          dosage_frequency: string | null
           final_diagnosis: string | null
           follow_up_date: string | null
           follow_up_required: boolean | null
           id: string
+          is_active: boolean | null
+          medication_end_date: string | null
+          medication_start_date: string | null
           prescribed_medication: string | null
           symptoms_observed: string | null
           ticket_id: string | null
@@ -346,12 +366,17 @@ export type Database = {
           animal_id: string
           appointment_date?: string
           continuing_medication?: boolean | null
+          course_completion_status?: string | null
           created_at?: string
           dosage?: string | null
+          dosage_frequency?: string | null
           final_diagnosis?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           id?: string
+          is_active?: boolean | null
+          medication_end_date?: string | null
+          medication_start_date?: string | null
           prescribed_medication?: string | null
           symptoms_observed?: string | null
           ticket_id?: string | null
@@ -363,12 +388,17 @@ export type Database = {
           animal_id?: string
           appointment_date?: string
           continuing_medication?: boolean | null
+          course_completion_status?: string | null
           created_at?: string
           dosage?: string | null
+          dosage_frequency?: string | null
           final_diagnosis?: string | null
           follow_up_date?: string | null
           follow_up_required?: boolean | null
           id?: string
+          is_active?: boolean | null
+          medication_end_date?: string | null
+          medication_start_date?: string | null
           prescribed_medication?: string | null
           symptoms_observed?: string | null
           ticket_id?: string | null
@@ -413,6 +443,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vaccination_history: {
+        Row: {
+          administered_by_vet_id: string | null
+          administered_date: string | null
+          animal_id: string
+          created_at: string
+          id: string
+          next_due_date: string | null
+          notes: string | null
+          updated_at: string
+          vaccination_status: Database["public"]["Enums"]["vaccination_status"]
+          vaccine_name: string
+        }
+        Insert: {
+          administered_by_vet_id?: string | null
+          administered_date?: string | null
+          animal_id: string
+          created_at?: string
+          id?: string
+          next_due_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          vaccination_status?: Database["public"]["Enums"]["vaccination_status"]
+          vaccine_name: string
+        }
+        Update: {
+          administered_by_vet_id?: string | null
+          administered_date?: string | null
+          animal_id?: string
+          created_at?: string
+          id?: string
+          next_due_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          vaccination_status?: Database["public"]["Enums"]["vaccination_status"]
+          vaccine_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaccination_history_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+        ]
       }
       vet_entries: {
         Row: {
@@ -543,6 +620,12 @@ export type Database = {
       is_vet: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      animal_health_status:
+        | "healthy"
+        | "under_treatment"
+        | "critical"
+        | "recovering"
+        | "vaccination_due"
       app_role: "farmer" | "vet" | "admin"
       appointment_status: "scheduled" | "completed" | "cancelled" | "overdue"
       appointment_type: "vaccination" | "follow_up"
@@ -554,6 +637,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      vaccination_status: "scheduled" | "completed" | "missed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -681,6 +765,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      animal_health_status: [
+        "healthy",
+        "under_treatment",
+        "critical",
+        "recovering",
+        "vaccination_due",
+      ],
       app_role: ["farmer", "vet", "admin"],
       appointment_status: ["scheduled", "completed", "cancelled", "overdue"],
       appointment_type: ["vaccination", "follow_up"],
@@ -693,6 +784,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      vaccination_status: ["scheduled", "completed", "missed"],
     },
   },
 } as const

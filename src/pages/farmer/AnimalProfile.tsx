@@ -8,15 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
+import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
 import { CreateTicketDialog } from '@/components/tickets/CreateTicketDialog';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
+import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
 import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
+import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -31,6 +34,8 @@ import {
   Syringe,
   ClipboardList
 } from 'lucide-react';
+
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
 
 interface Animal {
   animal_id: string;
@@ -50,6 +55,7 @@ interface Animal {
   prescribed_medication: string | null;
   vaccination_status: string | null;
   last_vaccination_date: string | null;
+  animal_status: AnimalHealthStatus | null;
   farmer_name: string;
   created_at: string;
 }
@@ -85,6 +91,7 @@ export default function AnimalProfile() {
   const { schedules, loading: schedulesLoading } = useSchedules({ animalId: id });
   const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
   const { records: treatmentRecords, loading: treatmentsLoading } = useTreatmentRecords({ animalId: id });
+  const { records: vaccinationRecords, loading: vaccinationsLoading } = useVaccinationHistory({ animalId: id });
 
   const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
@@ -101,7 +108,7 @@ export default function AnimalProfile() {
     ]);
 
     if (!animalResult.error && animalResult.data) {
-      setAnimal(animalResult.data);
+      setAnimal(animalResult.data as Animal);
       setEditSymptoms({
         symptom_1: animalResult.data.symptom_1 || '',
         symptom_2: animalResult.data.symptom_2 || '',
@@ -126,7 +133,6 @@ export default function AnimalProfile() {
     if (!animal || !user) return;
     setSavingSymptoms(true);
 
-    // Update animal record
     const { error: animalError } = await supabase
       .from('animals')
       .update({
@@ -146,7 +152,6 @@ export default function AnimalProfile() {
       return;
     }
 
-    // Add farmer entry for symptom update
     await supabase.from('farmer_entries').insert({
       animal_id: animal.animal_id,
       farmer_id: user.id,
@@ -205,7 +210,7 @@ export default function AnimalProfile() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-heading font-bold">
               {animal.breed || animal.species}
             </h1>
@@ -213,8 +218,9 @@ export default function AnimalProfile() {
               {animal.sex} • {animal.age ? `${animal.age} years old` : 'Age unknown'}
             </p>
           </div>
+          <AnimalStatusBadge status={animal.animal_status} />
           {animal.follow_up && (
-            <Badge variant="secondary" className="ml-auto bg-warning/20 text-warning-foreground">
+            <Badge variant="secondary" className="bg-warning/20 text-warning-foreground">
               <AlertTriangle className="w-3 h-3 mr-1" />
               Follow-up Required
             </Badge>
@@ -243,12 +249,7 @@ export default function AnimalProfile() {
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-3">
                 {activeTickets.map((ticket) => (
-                  <TicketCard
-                    key={ticket.id}
-                    ticket={ticket}
-                    linkPrefix="/farmer/animals"
-                    showAnimalInfo={false}
-                  />
+                  <TicketCard key={ticket.id} ticket={ticket} linkPrefix="/farmer/animals" showAnimalInfo={false} />
                 ))}
               </div>
             </CardContent>
@@ -344,11 +345,7 @@ export default function AnimalProfile() {
                           />
                         </div>
                       </div>
-                      <Button 
-                        onClick={handleSaveSymptoms} 
-                        className="w-full" 
-                        disabled={savingSymptoms}
-                      >
+                      <Button onClick={handleSaveSymptoms} className="w-full" disabled={savingSymptoms}>
                         {savingSymptoms ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Save Symptoms
                       </Button>
@@ -411,6 +408,11 @@ export default function AnimalProfile() {
               <TreatmentTimeline records={treatmentRecords} title="Treatment History" />
             )}
 
+            {/* Vaccination History */}
+            {vaccinationRecords.length > 0 && (
+              <VaccinationTimeline records={vaccinationRecords} title="Vaccination History" />
+            )}
+
             {/* Vet Visits */}
             <Card className="shadow-card">
               <CardHeader>
@@ -468,10 +470,7 @@ export default function AnimalProfile() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {upcomingSchedules.map((schedule) => (
-                    <div 
-                      key={schedule.id} 
-                      className="p-3 rounded-lg bg-secondary/50 space-y-2"
-                    >
+                    <div key={schedule.id} className="p-3 rounded-lg bg-secondary/50 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           {schedule.appointment_type === 'vaccination' ? (
@@ -483,10 +482,7 @@ export default function AnimalProfile() {
                             {schedule.appointment_type === 'vaccination' ? 'Vaccination' : 'Follow-up'}
                           </span>
                         </div>
-                        <AppointmentTimer 
-                          appointmentDate={schedule.appointment_date} 
-                          status={schedule.status}
-                        />
+                        <AppointmentTimer appointmentDate={schedule.appointment_date} status={schedule.status} />
                       </div>
                       {schedule.vaccine_name && (
                         <p className="text-sm text-muted-foreground">{schedule.vaccine_name}</p>
@@ -539,10 +535,7 @@ export default function AnimalProfile() {
                       <p className="font-medium">
                         Scheduled for {new Date(animal.follow_up_date).toLocaleDateString()}
                       </p>
-                      <AppointmentTimer 
-                        appointmentDate={animal.follow_up_date} 
-                        status="scheduled"
-                      />
+                      <AppointmentTimer appointmentDate={animal.follow_up_date} status="scheduled" />
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">

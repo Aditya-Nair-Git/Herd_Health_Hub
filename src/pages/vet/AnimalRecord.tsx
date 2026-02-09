@@ -11,10 +11,13 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
+import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
 import { ScheduleDialog } from '@/components/scheduling/ScheduleDialog';
 import { EditScheduleDialog } from '@/components/scheduling/EditScheduleDialog';
 import { TreatmentFormDialog } from '@/components/treatment/TreatmentFormDialog';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
+import { VaccinationFormDialog } from '@/components/vaccination/VaccinationFormDialog';
+import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -22,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
 import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
+import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -35,6 +39,8 @@ import {
   Edit,
   ClipboardList
 } from 'lucide-react';
+
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
 
 interface Animal {
   animal_id: string;
@@ -54,6 +60,7 @@ interface Animal {
   prescribed_medication: string | null;
   farmer_name: string;
   farmer_id: string;
+  animal_status: AnimalHealthStatus | null;
   created_at: string;
 }
 
@@ -93,6 +100,7 @@ export default function VetAnimalRecord() {
   const { schedules, loading: schedulesLoading, refetch: refetchSchedules } = useSchedules({ animalId: id });
   const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
   const { records: treatmentRecords, loading: treatmentsLoading, refetch: refetchTreatments } = useTreatmentRecords({ animalId: id });
+  const { records: vaccinationRecords, loading: vaccinationsLoading, refetch: refetchVaccinations } = useVaccinationHistory({ animalId: id });
 
   const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
@@ -124,7 +132,7 @@ export default function VetAnimalRecord() {
     ]);
 
     if (!animalResult.error && animalResult.data) {
-      setAnimal(animalResult.data);
+      setAnimal(animalResult.data as Animal);
     }
     if (!vetResult.error && vetResult.data) {
       setVetEntries(vetResult.data);
@@ -145,9 +153,21 @@ export default function VetAnimalRecord() {
 
   const handleSubmitVisit = async () => {
     if (!animal || !user) return;
+
+    // Validate follow-up date not in past
+    if (newEntry.follow_up && newEntry.follow_up_date) {
+      if (new Date(newEntry.follow_up_date) < new Date(new Date().toISOString().split('T')[0])) {
+        toast({
+          title: 'Error',
+          description: 'Follow-up date cannot be in the past',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setSubmitting(true);
 
-    // Insert vet entry
     const { error: entryError } = await supabase.from('vet_entries').insert({
       animal_id: animal.animal_id,
       species: animal.species,
@@ -173,7 +193,11 @@ export default function VetAnimalRecord() {
       return;
     }
 
-    // Update animal record
+    // Update animal record with status
+    const animalStatus = newEntry.follow_up ? 'under_treatment' : 
+                          newEntry.continuing_medication ? 'recovering' : 
+                          newEntry.vet_diagnosis ? 'under_treatment' : animal.animal_status;
+
     await supabase.from('animals').update({
       body_temperature: newEntry.body_temperature ? parseFloat(newEntry.body_temperature) : animal.body_temperature,
       symptom_1: newEntry.symptom_1 || animal.symptom_1,
@@ -184,6 +208,7 @@ export default function VetAnimalRecord() {
       follow_up: newEntry.follow_up,
       follow_up_date: newEntry.follow_up_date || null,
       vet_id: user.id,
+      animal_status: animalStatus,
     }).eq('animal_id', animal.animal_id);
 
     toast({
@@ -247,16 +272,24 @@ export default function VetAnimalRecord() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-heading font-bold">
-                {animal.breed || animal.species}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-heading font-bold">
+                  {animal.breed || animal.species}
+                </h1>
+                <AnimalStatusBadge status={animal.animal_status} />
+              </div>
               <p className="text-muted-foreground">
                 Owner: {animal.farmer_name} • {animal.sex} • {animal.age ? `${animal.age} years` : 'Age unknown'}
               </p>
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <VaccinationFormDialog
+              animalId={animal.animal_id}
+              vetId={user?.id || ''}
+              onVaccinationSaved={refetchVaccinations}
+            />
             <ScheduleDialog
               animalId={animal.animal_id}
               farmerId={animal.farmer_id}
@@ -381,6 +414,53 @@ export default function VetAnimalRecord() {
           </div>
         </div>
 
+        {/* Active Tickets */}
+        {activeTickets.length > 0 && (
+          <Card className="shadow-card border-warning/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-warning" />
+                Active Tickets ({activeTickets.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {activeTickets.map((ticket) => (
+                  <div key={ticket.id} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline" className={
+                        ticket.priority === 'emergency' ? 'bg-destructive/20 text-destructive' :
+                        ticket.priority === 'urgent' ? 'bg-warning/20 text-warning-foreground' : 'bg-muted'
+                      }>
+                        {ticket.priority}
+                      </Badge>
+                      <Badge variant="outline">{ticket.status}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{ticket.complaint}</p>
+                    {ticket.assigned_vet_id === user?.id && ticket.status !== 'completed' && (
+                      <TreatmentFormDialog
+                        ticketId={ticket.id}
+                        animalId={animal.animal_id}
+                        vetId={user?.id || ''}
+                        onTreatmentSaved={() => {
+                          refetchTickets();
+                          refetchTreatments();
+                          fetchData();
+                        }}
+                        trigger={
+                          <Button size="sm" className="mt-2 w-full" variant="outline">
+                            Complete Treatment
+                          </Button>
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -479,6 +559,12 @@ export default function VetAnimalRecord() {
               </CardContent>
             </Card>
 
+            {/* Treatment History */}
+            <TreatmentTimeline records={treatmentRecords} />
+
+            {/* Vaccination History */}
+            <VaccinationTimeline records={vaccinationRecords} />
+
             {/* Vet Visits */}
             <Card className="shadow-card">
               <CardHeader>
@@ -495,9 +581,7 @@ export default function VetAnimalRecord() {
                     {vetEntries.map((entry) => (
                       <div key={entry.id} className="p-4 rounded-lg border bg-card">
                         <div className="flex items-center justify-between mb-3">
-                          <p className="font-medium">
-                            {new Date(entry.visit_date).toLocaleDateString()}
-                          </p>
+                          <p className="font-medium">{new Date(entry.visit_date).toLocaleDateString()}</p>
                           {entry.continuing_medication && (
                             <Badge variant="secondary">Continuing Meds</Badge>
                           )}
@@ -581,10 +665,7 @@ export default function VetAnimalRecord() {
                 ) : (
                   <div className="space-y-3">
                     {upcomingSchedules.map((schedule) => (
-                      <div 
-                        key={schedule.id} 
-                        className="p-3 rounded-lg bg-secondary/50 space-y-2"
-                      >
+                      <div key={schedule.id} className="p-3 rounded-lg bg-secondary/50 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {schedule.appointment_type === 'vaccination' ? (
@@ -613,10 +694,7 @@ export default function VetAnimalRecord() {
                           <span className="text-xs text-muted-foreground">
                             {new Date(schedule.appointment_date).toLocaleDateString()}
                           </span>
-                          <AppointmentTimer 
-                            appointmentDate={schedule.appointment_date} 
-                            status={schedule.status}
-                          />
+                          <AppointmentTimer appointmentDate={schedule.appointment_date} status={schedule.status} />
                         </div>
                       </div>
                     ))}
@@ -634,10 +712,7 @@ export default function VetAnimalRecord() {
                 <CardContent>
                   <div className="space-y-2">
                     {completedSchedules.slice(0, 3).map((schedule) => (
-                      <div 
-                        key={schedule.id} 
-                        className="p-2 rounded-lg bg-success/10 flex items-center justify-between"
-                      >
+                      <div key={schedule.id} className="p-2 rounded-lg bg-success/10 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           {schedule.appointment_type === 'vaccination' ? (
                             <Syringe className="w-4 h-4 text-success" />
@@ -646,9 +721,7 @@ export default function VetAnimalRecord() {
                           )}
                           <span className="text-sm">{schedule.vaccine_name || 'Follow-up'}</span>
                         </div>
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs">
-                          Done
-                        </Badge>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs">Done</Badge>
                       </div>
                     ))}
                   </div>
@@ -665,18 +738,11 @@ export default function VetAnimalRecord() {
                 <CardContent>
                   {animal.follow_up_date ? (
                     <div className="space-y-2">
-                      <p className="font-medium">
-                        {new Date(animal.follow_up_date).toLocaleDateString()}
-                      </p>
-                      <AppointmentTimer 
-                        appointmentDate={animal.follow_up_date} 
-                        status="scheduled"
-                      />
+                      <p className="font-medium">{new Date(animal.follow_up_date).toLocaleDateString()}</p>
+                      <AppointmentTimer appointmentDate={animal.follow_up_date} status="scheduled" />
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No date scheduled yet
-                    </p>
+                    <p className="text-sm text-muted-foreground">No date scheduled yet</p>
                   )}
                 </CardContent>
               </Card>
