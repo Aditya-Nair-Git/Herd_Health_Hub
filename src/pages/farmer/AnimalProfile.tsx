@@ -13,6 +13,7 @@ import { CreateTicketDialog } from '@/components/tickets/CreateTicketDialog';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
+import { MedicationCard } from '@/components/medication/MedicationCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +21,7 @@ import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
 import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
 import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
+import { useActiveMedications } from '@/hooks/useActiveMedications';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -92,6 +94,7 @@ export default function AnimalProfile() {
   const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
   const { records: treatmentRecords, loading: treatmentsLoading } = useTreatmentRecords({ animalId: id });
   const { records: vaccinationRecords, loading: vaccinationsLoading } = useVaccinationHistory({ animalId: id });
+  const { activeMeds, loading: medsLoading } = useActiveMedications({ animalId: id });
 
   const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
@@ -411,6 +414,25 @@ export default function AnimalProfile() {
             {/* Vaccination History */}
             {vaccinationRecords.length > 0 && (
               <VaccinationTimeline records={vaccinationRecords} title="Vaccination History" />
+            )}
+
+            {/* Active Medications */}
+            {activeMeds.length > 0 && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Pill className="w-5 h-5 text-primary" />
+                    Active Medications ({activeMeds.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {activeMeds.map((med) => (
+                      <MedicationCard key={med.id} medication={med} showAnimalInfo={false} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Vet Visits */}

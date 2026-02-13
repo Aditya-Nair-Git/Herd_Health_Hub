@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduleCard } from '@/components/ui/schedule-card';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { MedicationCard } from '@/components/medication/MedicationCard';
+import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
+import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
+import { useActiveMedications } from '@/hooks/useActiveMedications';
 import { 
   PawPrint, 
   AlertTriangle, 
@@ -20,7 +24,8 @@ import {
   ChevronRight,
   Loader2,
   Clock,
-  ClipboardList
+  ClipboardList,
+  Pill
 } from 'lucide-react';
 
 interface Animal {
@@ -56,6 +61,16 @@ export default function FarmerDashboard() {
     assignedTickets, 
     inProgressTickets 
   } = useTickets({ farmerId: user?.id });
+
+  const { scheduledVaccinations: upcomingVaccineRecords, loading: vaccinationsLoading } = useVaccinationHistory();
+  const { activeMeds, loading: medsLoading } = useActiveMedications();
+
+  // Filter upcoming vaccines (due within 30 days)
+  const upcomingVaccines = upcomingVaccineRecords.filter(v => {
+    if (!v.next_due_date) return false;
+    const daysUntil = Math.ceil((new Date(v.next_due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return daysUntil <= 30 && daysUntil >= 0;
+  });
 
   const activeTickets = [...createdTickets, ...assignedTickets, ...inProgressTickets];
 
@@ -312,6 +327,65 @@ export default function FarmerDashboard() {
                         </Badge>
                       )}
                     </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Upcoming Vaccines & Active Medications */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Upcoming Vaccine Reminders */}
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Syringe className="w-5 h-5 text-warning" />
+                Upcoming Vaccine Due
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {vaccinationsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : upcomingVaccines.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4">No vaccines due in the next 30 days</p>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingVaccines.slice(0, 5).map((vac) => (
+                    <div key={vac.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                      <div>
+                        <p className="font-medium text-sm">{vac.vaccine_name}</p>
+                        <p className="text-xs text-muted-foreground">Due: {new Date(vac.next_due_date!).toLocaleDateString()}</p>
+                      </div>
+                      <AppointmentTimer appointmentDate={vac.next_due_date!} status="scheduled" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Active Medications */}
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Pill className="w-5 h-5 text-primary" />
+                Active Medications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {medsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : activeMeds.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4">No active medications</p>
+              ) : (
+                <div className="space-y-3">
+                  {activeMeds.slice(0, 5).map((med) => (
+                    <MedicationCard key={med.id} medication={med} />
                   ))}
                 </div>
               )}
