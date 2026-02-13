@@ -243,6 +243,12 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
+
+            <div className="mt-4 text-center">
+              <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Admin Login →
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </main>

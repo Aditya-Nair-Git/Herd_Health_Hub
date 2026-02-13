@@ -29,6 +29,7 @@ import VetSchedule from "./pages/vet/Schedule";
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTickets from "./pages/admin/Tickets";
+import AdminAuth from "./pages/AdminAuth";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ function AppRoutes() {
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/admin/login" element={<AdminAuth />} />
 
       {/* Farmer routes */}
       <Route

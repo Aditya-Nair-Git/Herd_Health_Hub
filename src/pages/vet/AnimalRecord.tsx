@@ -19,6 +19,8 @@ import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { VaccinationFormDialog } from '@/components/vaccination/VaccinationFormDialog';
 import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { AddMedicationDialog } from '@/components/medication/AddMedicationDialog';
+import { MedicationCard } from '@/components/medication/MedicationCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +28,7 @@ import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
 import { useTreatmentRecords } from '@/hooks/useTreatmentRecords';
 import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
+import { useActiveMedications } from '@/hooks/useActiveMedications';
 import { 
   ArrowLeft, 
   PawPrint, 
@@ -101,6 +104,7 @@ export default function VetAnimalRecord() {
   const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
   const { records: treatmentRecords, loading: treatmentsLoading, refetch: refetchTreatments } = useTreatmentRecords({ animalId: id });
   const { records: vaccinationRecords, loading: vaccinationsLoading, refetch: refetchVaccinations } = useVaccinationHistory({ animalId: id });
+  const { medications, activeMeds, loading: medsLoading, refetch: refetchMedications } = useActiveMedications({ animalId: id });
 
   const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
 
@@ -285,6 +289,10 @@ export default function VetAnimalRecord() {
           </div>
           
           <div className="flex flex-wrap gap-2">
+            <AddMedicationDialog
+              animalId={animal.animal_id}
+              onMedicationAdded={refetchMedications}
+            />
             <VaccinationFormDialog
               animalId={animal.animal_id}
               vetId={user?.id || ''}
@@ -564,6 +572,25 @@ export default function VetAnimalRecord() {
 
             {/* Vaccination History */}
             <VaccinationTimeline records={vaccinationRecords} />
+
+            {/* Active Medications */}
+            {activeMeds.length > 0 && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Pill className="w-5 h-5 text-primary" />
+                    Active Medications ({activeMeds.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {activeMeds.map((med) => (
+                      <MedicationCard key={med.id} medication={med} showAnimalInfo={false} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Vet Visits */}
             <Card className="shadow-card">

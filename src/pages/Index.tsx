@@ -162,9 +162,14 @@ export default function Index() {
               <PawPrint className="w-5 h-5 text-primary" />
               <span className="font-heading font-semibold">CattleHealth</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © 2026 CattleHealth Management System. All rights reserved.
-            </p>
+            <div className="flex items-center gap-4">
+              <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Admin Login
+              </Link>
+              <p className="text-sm text-muted-foreground">
+                © 2026 CattleHealth Management System. All rights reserved.
+              </p>
+            </div>
           </div>
         </div>
       </footer>

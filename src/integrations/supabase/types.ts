@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_medications: {
+        Row: {
+          animal_id: string
+          created_at: string
+          dosage: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          medication_name: string
+          medication_status: string
+          notes: string | null
+          prescribed_by_vet_id: string
+          start_date: string
+          treatment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          animal_id: string
+          created_at?: string
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          medication_name: string
+          medication_status?: string
+          notes?: string | null
+          prescribed_by_vet_id: string
+          start_date: string
+          treatment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          animal_id?: string
+          created_at?: string
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          medication_name?: string
+          medication_status?: string
+          notes?: string | null
+          prescribed_by_vet_id?: string
+          start_date?: string
+          treatment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_medications_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "active_medications_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       animals: {
         Row: {
           age: number | null
