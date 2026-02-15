@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { XCircle, Loader2 } from 'lucide-react';
 import type { Ticket } from '@/hooks/useTickets';
+import { canFarmerCancel } from '@/lib/ticketStateMachine';
 
 interface CancelTicketButtonProps {
   ticket: Ticket;
@@ -15,11 +16,19 @@ export function CancelTicketButton({ ticket, onTicketCancelled }: CancelTicketBu
   const { toast } = useToast();
   const [cancelling, setCancelling] = useState(false);
 
-  const canCancel = ['created', 'assigned'].includes(ticket.status);
-  if (!canCancel) return null;
+  if (!canFarmerCancel(ticket.status)) return null;
 
   const handleCancel = async () => {
     setCancelling(true);
+    
+    // Release associated vet slot if any
+    if (ticket.assigned_slot_id) {
+      await supabase.from('vet_slots').update({
+        status: 'available',
+        assigned_ticket_id: null,
+      }).eq('id', ticket.assigned_slot_id);
+    }
+
     const { error } = await supabase.from('tickets').update({
       status: 'cancelled',
       is_active: false,

@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTickets, type Ticket, type TicketStatus } from '@/hooks/useTickets';
 import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
+import { canTransition } from '@/lib/ticketStateMachine';
 import { 
   ClipboardList, 
   Loader2, 
@@ -98,6 +99,19 @@ export default function AdminTickets() {
 
     setAssigning(true);
 
+    // Determine target status based on whether a slot is selected
+    const targetStatus: TicketStatus = selectedSlotId ? 'in_progress' : 'assigned';
+
+    if (!canTransition(selectedTicket.status, targetStatus)) {
+      toast({
+        title: 'Invalid Transition',
+        description: `Cannot move ticket from "${selectedTicket.status}" to "${targetStatus}"`,
+        variant: 'destructive',
+      });
+      setAssigning(false);
+      return;
+    }
+
     // Update ticket
     const { error: ticketError } = await supabase
       .from('tickets')
@@ -105,7 +119,7 @@ export default function AdminTickets() {
         assigned_vet_id: selectedVetId,
         assigned_slot_id: selectedSlotId || null,
         admin_notes: adminNotes || null,
-        status: 'assigned' as TicketStatus,
+        status: targetStatus,
       })
       .eq('id', selectedTicket.id);
 
@@ -207,9 +221,9 @@ export default function AdminTickets() {
                     </p>
                   </div>
 
-                  {ticket.status === 'created' && (
+                  {(ticket.status === 'created' || ticket.status === 'assigned') && (
                     <Button size="sm" onClick={() => openAssignDialog(ticket)}>
-                      Assign Vet
+                      {ticket.status === 'created' ? 'Assign Vet' : 'Schedule Slot'}
                     </Button>
                   )}
                 </div>
