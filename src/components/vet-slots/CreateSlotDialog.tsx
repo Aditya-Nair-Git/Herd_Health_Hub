@@ -34,6 +34,31 @@ export function CreateSlotDialog({ vetId, onSlotCreated }: CreateSlotDialogProps
       return;
     }
 
+    // Prevent past date
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.slot_date < today) {
+      toast({
+        title: 'Error',
+        description: 'Cannot create availability in the past.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Prevent past time on today's date
+    if (formData.slot_date === today) {
+      const now = new Date();
+      const [hours, minutes] = formData.start_time.split(':').map(Number);
+      if (hours < now.getHours() || (hours === now.getHours() && minutes <= now.getMinutes())) {
+        toast({
+          title: 'Error',
+          description: 'Cannot create a slot for a time that has already passed today.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     if (formData.start_time >= formData.end_time) {
       toast({
         title: 'Error',
@@ -55,10 +80,17 @@ export function CreateSlotDialog({ vetId, onSlotCreated }: CreateSlotDialogProps
     });
 
     if (error) {
+      const msg = error.message || '';
       if (error.code === '23505') {
         toast({
           title: 'Error',
           description: 'A slot already exists for this time',
+          variant: 'destructive',
+        });
+      } else if (msg.includes('past') || msg.includes('passed')) {
+        toast({
+          title: 'Error',
+          description: msg,
           variant: 'destructive',
         });
       } else {
@@ -67,6 +99,7 @@ export function CreateSlotDialog({ vetId, onSlotCreated }: CreateSlotDialogProps
           description: 'Failed to create slot. Please try again.',
           variant: 'destructive',
         });
+        console.error('Slot creation failed:', error);
       }
     } else {
       toast({
