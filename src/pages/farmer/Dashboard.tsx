@@ -9,6 +9,7 @@ import { ScheduleCard } from '@/components/ui/schedule-card';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { MedicationCard } from '@/components/medication/MedicationCard';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
+import { SeasonalAwarenessFeed } from '@/components/awareness/SeasonalAwarenessFeed';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -334,38 +335,10 @@ export default function FarmerDashboard() {
           </Card>
         </div>
 
-        {/* Upcoming Vaccines & Active Medications */}
+        {/* Seasonal Awareness & Active Medications */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Upcoming Vaccine Reminders */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Syringe className="w-5 h-5 text-warning" />
-                Upcoming Vaccine Due
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vaccinationsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : upcomingVaccines.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No vaccines due in the next 30 days</p>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingVaccines.slice(0, 5).map((vac) => (
-                    <div key={vac.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <div>
-                        <p className="font-medium text-sm">{vac.vaccine_name}</p>
-                        <p className="text-xs text-muted-foreground">Due: {new Date(vac.next_due_date!).toLocaleDateString()}</p>
-                      </div>
-                      <AppointmentTimer appointmentDate={vac.next_due_date!} status="scheduled" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Seasonal Awareness Feed */}
+          <SeasonalAwarenessFeed />
 
           {/* Active Medications */}
           <Card className="shadow-card">
@@ -392,6 +365,31 @@ export default function FarmerDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Upcoming Vaccine Due */}
+        {upcomingVaccines.length > 0 && (
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Syringe className="w-5 h-5 text-warning" />
+                Upcoming Vaccine Due
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {upcomingVaccines.slice(0, 5).map((vac) => (
+                  <div key={vac.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                    <div>
+                      <p className="font-medium text-sm">{vac.vaccine_name}</p>
+                      <p className="text-xs text-muted-foreground">Due: {new Date(vac.next_due_date!).toLocaleDateString()}</p>
+                    </div>
+                    <AppointmentTimer appointmentDate={vac.next_due_date!} status="scheduled" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

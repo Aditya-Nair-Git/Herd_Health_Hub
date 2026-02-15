@@ -18,6 +18,7 @@ import FarmerAnimals from "./pages/farmer/Animals";
 import RegisterAnimal from "./pages/farmer/RegisterAnimal";
 import AnimalProfile from "./pages/farmer/AnimalProfile";
 import FarmerTickets from "./pages/farmer/Tickets";
+import FarmerCreateTicket from "./pages/farmer/CreateTicket";
 
 // Vet pages
 import VetDashboard from "./pages/vet/Dashboard";
@@ -30,6 +31,7 @@ import VetSchedule from "./pages/vet/Schedule";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminAuth from "./pages/AdminAuth";
+import AdminDemo from "./pages/AdminDemo";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,7 @@ function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/admin/login" element={<AdminAuth />} />
+      <Route path="/admin/demo" element={<AdminDemo />} />
 
       {/* Farmer routes */}
       <Route
@@ -98,6 +101,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['farmer', 'admin']}>
             <AnimalProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/farmer/create-ticket"
+        element={
+          <ProtectedRoute allowedRoles={['farmer', 'admin']}>
+            <FarmerCreateTicket />
           </ProtectedRoute>
         }
       />

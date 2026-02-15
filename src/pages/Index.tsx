@@ -86,6 +86,11 @@ export default function Index() {
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
+              <Link to="/admin/demo">
+                <Button size="lg" variant="ghost" className="text-base text-primary-foreground hover:bg-primary-foreground/10">
+                  Admin Demo Access
+                </Button>
+              </Link>
               <Link to="/about">
                 <Button size="lg" variant="ghost" className="text-base text-primary-foreground hover:bg-primary-foreground/10">
                   Learn More
