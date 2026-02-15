@@ -109,12 +109,26 @@ export function TreatmentFormDialog({
       return;
     }
 
-    // Update ticket status if this is from a ticket
+    // Update ticket status to completed if from a ticket
     if (ticketId) {
-      await supabase
+      // First check current status and validate transition
+      const { data: currentTicket } = await supabase
         .from('tickets')
-        .update({ status: 'completed' })
-        .eq('id', ticketId);
+        .select('status')
+        .eq('id', ticketId)
+        .single();
+
+      if (currentTicket) {
+        const currentStatus = currentTicket.status as 'created' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+        // If assigned, transition through in_progress first
+        if (currentStatus === 'assigned') {
+          await supabase.from('tickets').update({ status: 'in_progress' }).eq('id', ticketId);
+        }
+        // Then complete
+        if (currentStatus !== 'completed' && currentStatus !== 'cancelled') {
+          await supabase.from('tickets').update({ status: 'completed' }).eq('id', ticketId);
+        }
+      }
     }
 
     // Update animal record and status

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Loader2 } from 'lucide-react';
 import type { Ticket, TicketPriority } from '@/hooks/useTickets';
+import { canFarmerModify, canFarmerChangePriority } from '@/lib/ticketStateMachine';
 
 interface EditTicketDialogProps {
   ticket: Ticket;
@@ -27,10 +28,8 @@ export function EditTicketDialog({ ticket, onTicketUpdated }: EditTicketDialogPr
     priority: ticket.priority,
   });
 
-  const canModify = ['created', 'assigned'].includes(ticket.status);
-  const canChangePriority = ticket.status === 'created';
-
-  if (!canModify) return null;
+  if (!canFarmerModify(ticket.status)) return null;
+  const canChangePriority = canFarmerChangePriority(ticket.status);
 
   const handleSymptomChange = (symptomNumber: 1 | 2 | 3, value: string) => {
     const newValue = value === 'none' ? '' : value;
