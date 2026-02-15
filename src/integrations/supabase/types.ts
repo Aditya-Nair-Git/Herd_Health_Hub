@@ -309,6 +309,54 @@ export type Database = {
           },
         ]
       }
+      scheduling_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          performed_by_id: string
+          performed_by_role: string
+          slot_id: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by_id: string
+          performed_by_role: string
+          slot_id?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          performed_by_id?: string
+          performed_by_role?: string
+          slot_id?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_log_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "vet_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_log_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       symptoms_master: {
         Row: {
           created_at: string

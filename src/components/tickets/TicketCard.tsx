@@ -20,6 +20,8 @@ const priorityConfig: Record<TicketPriority, { label: string; className: string;
 const statusConfig: Record<TicketStatus, { label: string; className: string }> = {
   created: { label: 'Created', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
   assigned: { label: 'Assigned', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  waiting_for_slot: { label: 'Waiting for Slot', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
+  scheduled: { label: 'Scheduled', className: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' },
   in_progress: { label: 'In Progress', className: 'bg-warning/20 text-warning-foreground' },
   completed: { label: 'Completed', className: 'bg-success/20 text-success-foreground' },
   cancelled: { label: 'Cancelled', className: 'bg-muted text-muted-foreground' },
