@@ -786,6 +786,8 @@ export type Database = {
       ticket_status:
         | "created"
         | "assigned"
+        | "waiting_for_slot"
+        | "scheduled"
         | "in_progress"
         | "completed"
         | "cancelled"
@@ -932,6 +934,8 @@ export const Constants = {
       ticket_status: [
         "created",
         "assigned",
+        "waiting_for_slot",
+        "scheduled",
         "in_progress",
         "completed",
         "cancelled",
