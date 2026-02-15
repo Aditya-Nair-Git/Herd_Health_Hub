@@ -44,7 +44,7 @@ export function useVetSlots(options: UseVetSlotsOptions = {}) {
       .from('vet_slots')
       .select(`
         *,
-        tickets (
+        tickets!vet_slots_assigned_ticket_id_fkey (
           id,
           complaint,
           priority,
