@@ -619,6 +619,47 @@ export type Database = {
           },
         ]
       }
+      vet_notes: {
+        Row: {
+          animal_id: string
+          created_at: string
+          id: string
+          medical_tags: string | null
+          note_content: string
+          note_title: string
+          updated_at: string
+          vet_id: string
+        }
+        Insert: {
+          animal_id: string
+          created_at?: string
+          id?: string
+          medical_tags?: string | null
+          note_content: string
+          note_title: string
+          updated_at?: string
+          vet_id: string
+        }
+        Update: {
+          animal_id?: string
+          created_at?: string
+          id?: string
+          medical_tags?: string | null
+          note_content?: string
+          note_title?: string
+          updated_at?: string
+          vet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vet_notes_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["animal_id"]
+          },
+        ]
+      }
       vet_slots: {
         Row: {
           assigned_ticket_id: string | null

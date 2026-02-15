@@ -21,6 +21,7 @@ import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimelin
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { AddMedicationDialog } from '@/components/medication/AddMedicationDialog';
 import { MedicationCard } from '@/components/medication/MedicationCard';
+import { VetNotesSection } from '@/components/vet-notes/VetNotesSection';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -670,6 +671,9 @@ export default function VetAnimalRecord() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Medical Notes */}
+            <VetNotesSection animalId={animal.animal_id} />
           </div>
 
           {/* Sidebar */}

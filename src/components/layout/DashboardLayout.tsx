@@ -37,6 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const farmerLinks = [
     { href: '/farmer', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/farmer/animals', label: 'My Animals', icon: PawPrint },
+    { href: '/farmer/create-ticket', label: 'Create Ticket', icon: Plus },
     { href: '/farmer/tickets', label: 'My Tickets', icon: Ticket },
     { href: '/farmer/register', label: 'Register Animal', icon: Plus },
   ];
