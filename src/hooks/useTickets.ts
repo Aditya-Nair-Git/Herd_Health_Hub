@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type TicketPriority = 'normal' | 'urgent' | 'emergency';
-export type TicketStatus = 'created' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+export type TicketStatus = 'created' | 'assigned' | 'waiting_for_slot' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface Ticket {
   id: string;
@@ -66,7 +66,7 @@ export function useTickets(options: UseTicketsOptions = {}) {
       query = query.eq('animal_id', options.animalId);
     }
     if (options.statusFilter && options.statusFilter.length > 0) {
-      query = query.in('status', options.statusFilter);
+      query = query.in('status', options.statusFilter as any);
     }
 
     const { data, error } = await query;
@@ -85,7 +85,6 @@ export function useTickets(options: UseTicketsOptions = {}) {
   useEffect(() => {
     fetchTickets();
     
-    // Subscribe to realtime updates
     const channel = supabase
       .channel('tickets-changes')
       .on(
@@ -108,6 +107,8 @@ export function useTickets(options: UseTicketsOptions = {}) {
 
   const createdTickets = tickets.filter(t => t.status === 'created');
   const assignedTickets = tickets.filter(t => t.status === 'assigned');
+  const waitingForSlotTickets = tickets.filter(t => t.status === 'waiting_for_slot');
+  const scheduledTickets = tickets.filter(t => t.status === 'scheduled');
   const inProgressTickets = tickets.filter(t => t.status === 'in_progress');
   const completedTickets = tickets.filter(t => t.status === 'completed');
 
@@ -117,6 +118,8 @@ export function useTickets(options: UseTicketsOptions = {}) {
     refetch: fetchTickets,
     createdTickets,
     assignedTickets,
+    waitingForSlotTickets,
+    scheduledTickets,
     inProgressTickets,
     completedTickets
   };
