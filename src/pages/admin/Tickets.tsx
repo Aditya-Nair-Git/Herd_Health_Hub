@@ -55,7 +55,7 @@ export default function AdminTickets() {
   const [assigning, setAssigning] = useState(false);
 
   const { slots: vetSlots, loading: slotsLoading, refetch: refetchSlots } = useVetSlots({
-    vetId: selectedVetId,
+    vetId: selectedVetId || undefined,
     dateFrom: new Date().toISOString().split('T')[0],
     statusFilter: ['available'],
   });
