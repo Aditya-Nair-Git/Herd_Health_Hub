@@ -44,7 +44,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 
-type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due' | 'deceased';
 
 interface Animal {
   animal_id: string;

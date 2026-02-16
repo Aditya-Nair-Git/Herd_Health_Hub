@@ -778,6 +778,7 @@ export type Database = {
         | "critical"
         | "recovering"
         | "vaccination_due"
+        | "deceased"
       app_role: "farmer" | "vet" | "admin"
       appointment_status: "scheduled" | "completed" | "cancelled" | "overdue"
       appointment_type: "vaccination" | "follow_up"
@@ -925,6 +926,7 @@ export const Constants = {
         "critical",
         "recovering",
         "vaccination_due",
+        "deceased",
       ],
       app_role: ["farmer", "vet", "admin"],
       appointment_status: ["scheduled", "completed", "cancelled", "overdue"],

@@ -19,7 +19,7 @@ import {
   X
 } from 'lucide-react';
 
-type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due' | 'deceased';
 
 interface Animal {
   animal_id: string;
@@ -155,6 +155,7 @@ export default function FarmerAnimals() {
                     <SelectItem value="critical">Critical</SelectItem>
                     <SelectItem value="recovering">Recovering</SelectItem>
                     <SelectItem value="vaccination_due">Vaccination Due</SelectItem>
+                    <SelectItem value="deceased">Deceased</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
