@@ -110,6 +110,14 @@ export function TreatmentFormDialog({
           await supabase.from('tickets').update({ status: 'completed' }).eq('id', ticketId);
         }
 
+        // Release the associated vet slot
+        if (currentTicket.assigned_slot_id) {
+          await supabase.from('vet_slots').update({
+            status: 'available',
+            assigned_ticket_id: null,
+          }).eq('id', currentTicket.assigned_slot_id);
+        }
+
         // Log completion
         if (user) {
           await supabase.from('scheduling_log').insert({

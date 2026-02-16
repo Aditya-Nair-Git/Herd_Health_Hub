@@ -26,13 +26,15 @@ export default function FarmerTickets() {
     loading, 
     refetch,
     createdTickets, 
-    assignedTickets, 
+    assignedTickets,
+    waitingForSlotTickets,
+    scheduledTickets,
     inProgressTickets, 
     completedTickets 
   } = useTickets({ farmerId: user?.id });
 
   const cancelledTickets = tickets.filter(t => t.status === 'cancelled');
-  const activeTickets = [...createdTickets, ...assignedTickets, ...inProgressTickets];
+  const activeTickets = [...createdTickets, ...assignedTickets, ...waitingForSlotTickets, ...scheduledTickets, ...inProgressTickets];
 
   if (loading) {
     return (

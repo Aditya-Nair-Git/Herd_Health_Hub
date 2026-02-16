@@ -67,7 +67,7 @@ export default function VetDashboard() {
   const { scheduledVaccinations: missedVacs, loading: vaccinationsLoading } = useVaccinationHistory({ vetId: user?.id });
   const { activeMeds, loading: medsLoading } = useActiveMedications({ vetId: user?.id });
 
-  const myActiveTickets = [...assignedTickets, ...inProgressTickets];
+  const myActiveTickets = [...assignedTickets, ...inProgressTickets, ...tickets.filter(t => t.status === 'waiting_for_slot' || t.status === 'scheduled')];
 
   useEffect(() => {
     if (user) {

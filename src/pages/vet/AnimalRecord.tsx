@@ -107,7 +107,7 @@ export default function VetAnimalRecord() {
   const { records: vaccinationRecords, loading: vaccinationsLoading, refetch: refetchVaccinations } = useVaccinationHistory({ animalId: id });
   const { medications, activeMeds, loading: medsLoading, refetch: refetchMedications } = useActiveMedications({ animalId: id });
 
-  const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
+  const activeTickets = tickets.filter(t => ['created', 'assigned', 'waiting_for_slot', 'scheduled', 'in_progress'].includes(t.status));
 
   const [newEntry, setNewEntry] = useState({
     body_temperature: '',
