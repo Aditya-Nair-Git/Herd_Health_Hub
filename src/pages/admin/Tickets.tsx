@@ -263,53 +263,45 @@ export default function AdminTickets() {
           <p className="text-muted-foreground mt-1">Review, assign, and schedule checkup tickets</p>
         </div>
 
-        <Tabs defaultValue="created" className="w-full">
+        <Tabs defaultValue="new" className="w-full">
           <TabsList className="flex flex-wrap h-auto gap-1">
-            <TabsTrigger value="created" className="flex gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="new" className="flex gap-1 text-xs sm:text-sm">
               <AlertCircle className="w-4 h-4" /> New ({createdTickets.length})
             </TabsTrigger>
             <TabsTrigger value="assigned" className="flex gap-1 text-xs sm:text-sm">
-              <User className="w-4 h-4" /> Assigned ({assignedTickets.length})
-            </TabsTrigger>
-            <TabsTrigger value="waiting" className="flex gap-1 text-xs sm:text-sm">
-              <CalendarClock className="w-4 h-4" /> Waiting ({waitingForSlotTickets.length})
+              <User className="w-4 h-4" /> Assigned ({assignedTickets.length + waitingForSlotTickets.length})
             </TabsTrigger>
             <TabsTrigger value="scheduled" className="flex gap-1 text-xs sm:text-sm">
-              <CalendarCheck className="w-4 h-4" /> Scheduled ({scheduledTickets.length})
+              <CalendarCheck className="w-4 h-4" /> Scheduled ({scheduledTickets.length + inProgressTickets.length})
             </TabsTrigger>
-            <TabsTrigger value="in_progress" className="flex gap-1 text-xs sm:text-sm">
-              <Clock className="w-4 h-4" /> Active ({inProgressTickets.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="flex gap-1 text-xs sm:text-sm">
-              <CheckCircle className="w-4 h-4" /> Done ({completedTickets.length})
+            <TabsTrigger value="done" className="flex gap-1 text-xs sm:text-sm">
+              <CheckCircle className="w-4 h-4" /> Done ({completedTickets.length + tickets.filter(t => t.status === 'cancelled').length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="created" className="mt-6">
+          <TabsContent value="new" className="mt-6">
             <TicketList ticketList={createdTickets} actions={(ticket) => (
               <Button size="sm" onClick={() => openAssignDialog(ticket)}>Assign Vet</Button>
             )} />
           </TabsContent>
           <TabsContent value="assigned" className="mt-6">
-            <TicketList ticketList={assignedTickets} actions={(ticket) => (
-              <Button size="sm" onClick={() => openAssignDialog(ticket)}>Reassign</Button>
-            )} />
-          </TabsContent>
-          <TabsContent value="waiting" className="mt-6">
-            <TicketList ticketList={waitingForSlotTickets} actions={(ticket) => (
-              <Button size="sm" onClick={() => openScheduleDialog(ticket)}>
-                <Calendar className="w-4 h-4 mr-1" /> Book Slot
-              </Button>
+            <TicketList ticketList={[...assignedTickets, ...waitingForSlotTickets]} actions={(ticket) => (
+              <>
+                {ticket.status === 'waiting_for_slot' ? (
+                  <Button size="sm" onClick={() => openScheduleDialog(ticket)}>
+                    <Calendar className="w-4 h-4 mr-1" /> Book Slot
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => openAssignDialog(ticket)}>Reassign</Button>
+                )}
+              </>
             )} />
           </TabsContent>
           <TabsContent value="scheduled" className="mt-6">
-            <TicketList ticketList={scheduledTickets} />
+            <TicketList ticketList={[...scheduledTickets, ...inProgressTickets]} />
           </TabsContent>
-          <TabsContent value="in_progress" className="mt-6">
-            <TicketList ticketList={inProgressTickets} />
-          </TabsContent>
-          <TabsContent value="completed" className="mt-6">
-            <TicketList ticketList={completedTickets} />
+          <TabsContent value="done" className="mt-6">
+            <TicketList ticketList={[...completedTickets, ...tickets.filter(t => t.status === 'cancelled')]} />
           </TabsContent>
         </Tabs>
 
