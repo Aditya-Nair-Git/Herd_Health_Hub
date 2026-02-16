@@ -26,7 +26,7 @@ export function CancelTicketButton({ ticket, onTicketCancelled }: CancelTicketBu
     // Release associated vet slot if any
     if (ticket.assigned_slot_id) {
       await supabase.from('vet_slots').update({
-        status: 'available',
+        status: 'available' as any,
         assigned_ticket_id: null,
       }).eq('id', ticket.assigned_slot_id);
 

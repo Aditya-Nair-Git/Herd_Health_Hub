@@ -37,10 +37,20 @@ export default function VetSchedule() {
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-  const { slots, loading, refetch, availableSlots, bookedSlots } = useVetSlots({
+  const today = new Date().toISOString().split('T')[0];
+
+  const { slots: allSlots, loading, refetch, availableSlots, bookedSlots } = useVetSlots({
     vetId: user?.id,
     dateFrom: startOfWeek.toISOString().split('T')[0],
     dateTo: endOfWeek.toISOString().split('T')[0],
+  });
+
+  // Filter out past slots that are not booked (clean up stale availability)
+  const slots = allSlots.filter(slot => {
+    // Always show booked slots (upcoming ones)
+    if (slot.status === 'booked') return true;
+    // For available/blocked slots, only show if the date is today or future
+    return slot.slot_date >= today;
   });
 
   const handleBlockSlot = async (slotId: string) => {
@@ -122,13 +132,13 @@ export default function VetSchedule() {
         <div className="grid grid-cols-3 gap-4">
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-success">{availableSlots.length}</p>
+              <p className="text-2xl font-bold text-success">{slots.filter(s => s.status === 'available').length}</p>
               <p className="text-xs text-muted-foreground">Available</p>
             </CardContent>
           </Card>
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-warning">{bookedSlots.length}</p>
+              <p className="text-2xl font-bold text-warning">{slots.filter(s => s.status === 'booked').length}</p>
               <p className="text-xs text-muted-foreground">Booked</p>
             </CardContent>
           </Card>

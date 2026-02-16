@@ -101,21 +101,21 @@ export function TreatmentFormDialog({
 
       if (currentTicket) {
         const status = currentTicket.status as string;
-        // Transition: scheduled → in_progress → completed
+        // Transition through proper states to completed
         if (status === 'scheduled') {
-          await supabase.from('tickets').update({ status: 'in_progress' }).eq('id', ticketId);
-        }
-        // Then complete
-        if (status !== 'completed' && status !== 'cancelled') {
-          await supabase.from('tickets').update({ status: 'completed' }).eq('id', ticketId);
+          // First move to in_progress, then to completed
+          await supabase.from('tickets').update({ status: 'in_progress' as any }).eq('id', ticketId);
+          await supabase.from('tickets').update({ status: 'completed' as any }).eq('id', ticketId);
+        } else if (status === 'in_progress') {
+          await supabase.from('tickets').update({ status: 'completed' as any }).eq('id', ticketId);
+        } else if (status !== 'completed' && status !== 'cancelled') {
+          // For assigned/waiting_for_slot tickets being completed directly
+          await supabase.from('tickets').update({ status: 'completed' as any }).eq('id', ticketId);
         }
 
-        // Release the associated vet slot
+        // Delete the associated vet slot (cleanup, not just release)
         if (currentTicket.assigned_slot_id) {
-          await supabase.from('vet_slots').update({
-            status: 'available',
-            assigned_ticket_id: null,
-          }).eq('id', currentTicket.assigned_slot_id);
+          await supabase.from('vet_slots').delete().eq('id', currentTicket.assigned_slot_id);
         }
 
         // Log completion

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
@@ -34,10 +35,11 @@ import {
   Loader2,
   Edit,
   Syringe,
-  ClipboardList
+  ClipboardList,
+  Skull
 } from 'lucide-react';
 
-type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due' | 'deceased';
 
 interface Animal {
   animal_id: string;
@@ -84,11 +86,14 @@ export default function AnimalProfile() {
   const [loading, setLoading] = useState(true);
   const [symptomDialogOpen, setSymptomDialogOpen] = useState(false);
   const [savingSymptoms, setSavingSymptoms] = useState(false);
+  const [markingDeceased, setMarkingDeceased] = useState(false);
   const [editSymptoms, setEditSymptoms] = useState({
     symptom_1: '',
     symptom_2: '',
     symptom_3: '',
   });
+
+  const isDeceased = animal?.animal_status === 'deceased';
 
   const { schedules, loading: schedulesLoading } = useSchedules({ animalId: id });
   const { tickets, loading: ticketsLoading, refetch: refetchTickets } = useTickets({ animalId: id });
@@ -177,6 +182,24 @@ export default function AnimalProfile() {
     setSavingSymptoms(false);
   };
 
+  const handleMarkDeceased = async () => {
+    if (!animal) return;
+    setMarkingDeceased(true);
+
+    const { error } = await supabase
+      .from('animals')
+      .update({ animal_status: 'deceased' as any })
+      .eq('animal_id', animal.animal_id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update animal status', variant: 'destructive' });
+    } else {
+      toast({ title: 'Status Updated', description: 'Animal has been marked as deceased.' });
+      fetchAnimalData();
+    }
+    setMarkingDeceased(false);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -232,12 +255,39 @@ export default function AnimalProfile() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
-          <CreateTicketDialog
-            animalId={animal.animal_id}
-            farmerId={user?.id || ''}
-            farmerName={animal.farmer_name}
-            onTicketCreated={refetchTickets}
-          />
+          {!isDeceased && (
+            <CreateTicketDialog
+              animalId={animal.animal_id}
+              farmerId={user?.id || ''}
+              farmerName={animal.farmer_name}
+              onTicketCreated={refetchTickets}
+            />
+          )}
+          {!isDeceased && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-muted-foreground">
+                  <Skull className="w-4 h-4 mr-1" />
+                  Mark as Deceased
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Mark Animal as Deceased?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will mark the animal as deceased. All historical records, tickets, and medical data will be preserved. This action cannot be easily undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleMarkDeceased} disabled={markingDeceased} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {markingDeceased && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Yes, Mark as Deceased
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {/* Active Tickets */}

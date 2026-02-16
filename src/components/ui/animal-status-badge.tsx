@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Heart, Stethoscope, AlertTriangle, Activity, Syringe } from 'lucide-react';
+import { Heart, Stethoscope, AlertTriangle, Activity, Syringe, Skull } from 'lucide-react';
 
-type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due';
+type AnimalHealthStatus = 'healthy' | 'under_treatment' | 'critical' | 'recovering' | 'vaccination_due' | 'deceased';
 
 const statusConfig: Record<AnimalHealthStatus, { label: string; className: string; icon: typeof Heart }> = {
   healthy: { label: 'Healthy', className: 'bg-success/20 text-success-foreground border-success/30', icon: Heart },
@@ -10,6 +10,7 @@ const statusConfig: Record<AnimalHealthStatus, { label: string; className: strin
   critical: { label: 'Critical', className: 'bg-destructive/20 text-destructive border-destructive/30', icon: AlertTriangle },
   recovering: { label: 'Recovering', className: 'bg-primary/20 text-primary border-primary/30', icon: Activity },
   vaccination_due: { label: 'Vaccination Due', className: 'bg-accent/20 text-accent-foreground border-accent/30', icon: Syringe },
+  deceased: { label: 'Deceased', className: 'bg-muted text-muted-foreground border-muted-foreground/30', icon: Skull },
 };
 
 interface AnimalStatusBadgeProps {
