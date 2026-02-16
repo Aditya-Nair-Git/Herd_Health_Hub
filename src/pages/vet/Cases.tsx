@@ -3,17 +3,20 @@ import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { useTickets } from '@/hooks/useTickets';
+import { useTickets, type Ticket } from '@/hooks/useTickets';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { ScheduleTicketDialog } from '@/components/vet-slots/ScheduleTicketDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Stethoscope, 
   Calendar,
   Loader2,
   ClipboardList,
-  CheckCircle
+  CheckCircle,
+  CalendarPlus
 } from 'lucide-react';
 
 interface VetEntry {
@@ -35,10 +38,13 @@ export default function VetCases() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<VetEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleTarget, setScheduleTarget] = useState<Ticket | null>(null);
 
   const { 
     tickets, 
     loading: ticketsLoading,
+    refetch: refetchTickets,
     assignedTickets,
     waitingForSlotTickets,
     scheduledTickets,
@@ -78,6 +84,11 @@ export default function VetCases() {
       setEntries(data as VetEntry[]);
     }
     setLoading(false);
+  };
+
+  const openScheduleDialog = (ticket: Ticket) => {
+    setScheduleTarget(ticket);
+    setScheduleDialogOpen(true);
   };
 
   if (loading || ticketsLoading) {
@@ -128,7 +139,20 @@ export default function VetCases() {
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeTickets.map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} linkPrefix="/vet/animal" />
+                  <div key={ticket.id} className="space-y-2">
+                    <TicketCard ticket={ticket} linkPrefix="/vet/animal" />
+                    {(ticket.status === 'assigned' || ticket.status === 'waiting_for_slot') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => openScheduleDialog(ticket)}
+                      >
+                        <CalendarPlus className="w-4 h-4 mr-1" />
+                        Schedule Appointment
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -226,6 +250,22 @@ export default function VetCases() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Schedule Ticket Dialog */}
+      {scheduleTarget && (
+        <ScheduleTicketDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          ticketId={scheduleTarget.id}
+          vetId={user?.id || ''}
+          ticketInfo={{
+            complaint: scheduleTarget.complaint,
+            farmerName: scheduleTarget.farmer_name,
+            animalInfo: scheduleTarget.animals?.breed || scheduleTarget.animals?.species || 'Animal',
+          }}
+          onScheduled={refetchTickets}
+        />
+      )}
     </DashboardLayout>
   );
 }
