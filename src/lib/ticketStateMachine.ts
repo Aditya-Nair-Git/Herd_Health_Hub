@@ -29,7 +29,7 @@ export function canTransition(from: TicketStatus, to: TicketStatus): boolean {
 }
 
 export function canFarmerCancel(status: TicketStatus): boolean {
-  return status === 'created' || status === 'assigned' || status === 'waiting_for_slot';
+  return status === 'created' || status === 'assigned' || status === 'waiting_for_slot' || status === 'scheduled';
 }
 
 export function canFarmerModify(status: TicketStatus): boolean {
