@@ -96,7 +96,7 @@ export default function AnimalProfile() {
   const { records: vaccinationRecords, loading: vaccinationsLoading } = useVaccinationHistory({ animalId: id });
   const { activeMeds, loading: medsLoading } = useActiveMedications({ animalId: id });
 
-  const activeTickets = tickets.filter(t => ['created', 'assigned', 'in_progress'].includes(t.status));
+  const activeTickets = tickets.filter(t => ['created', 'assigned', 'waiting_for_slot', 'scheduled', 'in_progress'].includes(t.status));
 
   useEffect(() => {
     if (id) {

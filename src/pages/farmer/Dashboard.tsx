@@ -73,7 +73,7 @@ export default function FarmerDashboard() {
     return daysUntil <= 30 && daysUntil >= 0;
   });
 
-  const activeTickets = [...createdTickets, ...assignedTickets, ...inProgressTickets];
+  const activeTickets = [...createdTickets, ...assignedTickets, ...inProgressTickets, ...tickets.filter(t => t.status === 'waiting_for_slot' || t.status === 'scheduled')];
 
   useEffect(() => {
     if (user) {
@@ -95,7 +95,7 @@ export default function FarmerDashboard() {
 
   const totalAnimals = animals.length;
   const followUpsNeeded = animals.filter(a => a.follow_up).length;
-  const activeIssues = animals.filter(a => a.disease_diagnosis && a.follow_up).length;
+  
 
   if (loading) {
     return (
@@ -176,10 +176,10 @@ export default function FarmerDashboard() {
             variant={followUpsNeeded > 0 ? 'warning' : 'default'}
           />
           <StatCard
-            title="Active Health Issues"
-            value={activeIssues}
-            icon={<AlertTriangle className="w-6 h-6" />}
-            variant={activeIssues > 0 ? 'destructive' : 'success'}
+            title="Active Medications"
+            value={activeMeds.length}
+            icon={<Pill className="w-6 h-6" />}
+            variant={activeMeds.length > 0 ? 'warning' : 'default'}
           />
         </div>
 
