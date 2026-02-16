@@ -3,34 +3,27 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreateSlotDialog } from '@/components/vet-slots/CreateSlotDialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { useVetSlots, type VetSlot, type SlotStatus } from '@/hooks/useVetSlots';
+import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { 
   Calendar, Loader2, ChevronLeft, ChevronRight, 
-  Clock, User, X, Unlock, Trash2
+  User, Trash2, Plus, CalendarCheck, CalendarX
 } from 'lucide-react';
-
-const slotColorMap: Record<SlotStatus, string> = {
-  available: 'border-l-4 border-l-success bg-success/5',
-  booked: 'border-l-4 border-l-warning bg-warning/5',
-  blocked: 'border-l-4 border-l-muted-foreground bg-muted/30',
-};
-
-const slotBadgeMap: Record<SlotStatus, { label: string; className: string }> = {
-  available: { label: 'Available', className: 'bg-success/20 text-success-foreground' },
-  booked: { label: 'Booked', className: 'bg-warning/20 text-warning-foreground' },
-  blocked: { label: 'Blocked', className: 'bg-muted text-muted-foreground' },
-};
 
 export default function VetSchedule() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  
+  const [markFreeOpen, setMarkFreeOpen] = useState(false);
+  const [freeDate, setFreeDate] = useState('');
+  const [markingFree, setMarkingFree] = useState(false);
+
   const currentDate = new Date(selectedDate);
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
@@ -39,46 +32,68 @@ export default function VetSchedule() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { slots: allSlots, loading, refetch, availableSlots, bookedSlots } = useVetSlots({
+  const { slots: allSlots, loading, refetch } = useVetSlots({
     vetId: user?.id,
     dateFrom: startOfWeek.toISOString().split('T')[0],
     dateTo: endOfWeek.toISOString().split('T')[0],
   });
 
-  // Filter out past slots that are not booked (clean up stale availability)
+  // Filter: only show upcoming dates. For booked, only future. For available, only today+future.
   const slots = allSlots.filter(slot => {
-    // Always show booked slots (upcoming ones)
-    if (slot.status === 'booked') return true;
-    // For available/blocked slots, only show if the date is today or future
-    return slot.slot_date >= today;
+    if (slot.status === 'booked') return slot.slot_date >= today;
+    if (slot.status === 'available') return slot.slot_date >= today;
+    return false; // hide blocked/other
   });
 
-  const handleBlockSlot = async (slotId: string) => {
-    const { error } = await supabase.from('vet_slots').update({ status: 'blocked' }).eq('id', slotId);
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to block slot', variant: 'destructive' });
-    } else {
-      toast({ title: 'Slot blocked' });
-      refetch();
+  const handleMarkDateFree = async () => {
+    if (!freeDate) {
+      toast({ title: 'Error', description: 'Please select a date', variant: 'destructive' });
+      return;
     }
-  };
+    if (freeDate < today) {
+      toast({ title: 'Error', description: 'Cannot mark past dates as free', variant: 'destructive' });
+      return;
+    }
 
-  const handleUnblockSlot = async (slotId: string) => {
-    const { error } = await supabase.from('vet_slots').update({ status: 'available' }).eq('id', slotId);
+    // Check if date already has an available slot
+    const existing = allSlots.find(s => s.slot_date === freeDate && s.status === 'available');
+    if (existing) {
+      toast({ title: 'Already Free', description: 'This date is already marked as available.' });
+      setMarkFreeOpen(false);
+      return;
+    }
+
+    setMarkingFree(true);
+    const { error } = await supabase.from('vet_slots').insert({
+      vet_id: user?.id || '',
+      slot_date: freeDate,
+      start_time: '09:00',
+      end_time: '17:00',
+      status: 'available',
+      notes: null,
+    });
+
     if (error) {
-      toast({ title: 'Error', description: 'Failed to unblock slot', variant: 'destructive' });
+      if (error.code === '23505') {
+        toast({ title: 'Error', description: 'This date already has an entry.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Error', description: 'Failed to mark date as free', variant: 'destructive' });
+      }
     } else {
-      toast({ title: 'Slot unblocked' });
+      toast({ title: 'Date Marked Free', description: `${new Date(freeDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} is now available.` });
+      setMarkFreeOpen(false);
+      setFreeDate('');
       refetch();
     }
+    setMarkingFree(false);
   };
 
   const handleDeleteSlot = async (slotId: string) => {
     const { error } = await supabase.from('vet_slots').delete().eq('id', slotId);
     if (error) {
-      toast({ title: 'Error', description: 'Failed to delete slot', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to remove date', variant: 'destructive' });
     } else {
-      toast({ title: 'Slot deleted' });
+      toast({ title: 'Date Removed' });
       refetch();
     }
   };
@@ -87,14 +102,6 @@ export default function VetSchedule() {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     setSelectedDate(newDate.toISOString().split('T')[0]);
-  };
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
   };
 
   // Group slots by date
@@ -113,9 +120,12 @@ export default function VetSchedule() {
       date: date.toISOString().split('T')[0],
       dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
       dayNum: date.getDate(),
-      isToday: date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0],
+      isToday: date.toISOString().split('T')[0] === today,
     });
   }
+
+  const bookedCount = slots.filter(s => s.status === 'booked').length;
+  const availableCount = slots.filter(s => s.status === 'available').length;
 
   return (
     <DashboardLayout>
@@ -125,27 +135,30 @@ export default function VetSchedule() {
             <h1 className="text-3xl font-heading font-bold">My Schedule</h1>
             <p className="text-muted-foreground mt-1">Manage your availability and appointments</p>
           </div>
-          <CreateSlotDialog vetId={user?.id || ''} onSlotCreated={refetch} />
+          <Button onClick={() => { setFreeDate(''); setMarkFreeOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Mark Date as Free
+          </Button>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-4">
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-success">{slots.filter(s => s.status === 'available').length}</p>
-              <p className="text-xs text-muted-foreground">Available</p>
+              <p className="text-2xl font-bold text-success">{availableCount}</p>
+              <p className="text-xs text-muted-foreground">Free Dates</p>
             </CardContent>
           </Card>
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-warning">{slots.filter(s => s.status === 'booked').length}</p>
+              <p className="text-2xl font-bold text-warning">{bookedCount}</p>
               <p className="text-xs text-muted-foreground">Booked</p>
             </CardContent>
           </Card>
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">{slots.length}</p>
-              <p className="text-xs text-muted-foreground">Total Slots</p>
+              <p className="text-xs text-muted-foreground">Total This Week</p>
             </CardContent>
           </Card>
         </div>
@@ -172,67 +185,91 @@ export default function VetSchedule() {
               </div>
             ) : (
               <div className="grid grid-cols-7 gap-2">
-                {weekDays.map((day) => (
-                  <div key={day.date} className="min-h-[200px]">
-                    <div className={cn(
-                      "text-center p-2 rounded-t-lg",
-                      day.isToday ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                    )}>
-                      <p className="text-xs font-medium">{day.dayName}</p>
-                      <p className="text-lg font-bold">{day.dayNum}</p>
-                    </div>
-                    <div className="border border-t-0 rounded-b-lg p-1.5 space-y-1.5 min-h-[150px]">
-                      {slotsByDate[day.date]?.map((slot) => {
-                        const badge = slotBadgeMap[slot.status];
-                        return (
-                          <div key={slot.id} className={cn("p-2 rounded-md text-xs", slotColorMap[slot.status])}>
+                {weekDays.map((day) => {
+                  const daySlots = slotsByDate[day.date] || [];
+                  const isPast = day.date < today;
+                  return (
+                    <div key={day.date} className="min-h-[200px]">
+                      <div className={cn(
+                        "text-center p-2 rounded-t-lg",
+                        day.isToday ? 'bg-primary text-primary-foreground' : isPast ? 'bg-muted/50' : 'bg-secondary'
+                      )}>
+                        <p className="text-xs font-medium">{day.dayName}</p>
+                        <p className="text-lg font-bold">{day.dayNum}</p>
+                      </div>
+                      <div className={cn(
+                        "border border-t-0 rounded-b-lg p-1.5 space-y-1.5 min-h-[150px]",
+                        isPast && "opacity-50"
+                      )}>
+                        {daySlots.length > 0 ? daySlots.map((slot) => (
+                          <div key={slot.id} className={cn(
+                            "p-2 rounded-md text-xs",
+                            slot.status === 'available' && "border-l-4 border-l-success bg-success/5",
+                            slot.status === 'booked' && "border-l-4 border-l-warning bg-warning/5",
+                          )}>
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-medium">
-                                {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                              </span>
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1 py-0",
+                                slot.status === 'available' && "bg-success/20 text-success-foreground",
+                                slot.status === 'booked' && "bg-warning/20 text-warning-foreground",
+                              )}>
+                                {slot.status === 'available' ? 'Free' : 'Booked'}
+                              </Badge>
                             </div>
-                            <Badge variant="outline" className={cn("text-[10px] px-1 py-0", badge.className)}>
-                              {badge.label}
-                            </Badge>
                             {slot.status === 'booked' && slot.tickets && (
                               <div className="mt-1 p-1 rounded bg-card/80">
-                                <p className="text-[10px] font-medium truncate">{slot.tickets.animals?.farmer_name}</p>
+                                <div className="flex items-center gap-1">
+                                  <User className="w-3 h-3" />
+                                  <p className="text-[10px] font-medium truncate">{slot.tickets.animals?.farmer_name}</p>
+                                </div>
                                 <p className="text-[10px] text-muted-foreground truncate">{slot.tickets.complaint}</p>
                               </div>
                             )}
-                            <div className="flex gap-1 mt-1">
-                              {slot.status === 'available' && (
-                                <>
-                                  <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px]"
-                                    onClick={() => handleBlockSlot(slot.id)}>
-                                    <X className="w-3 h-3" /> Block
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px] text-destructive"
-                                    onClick={() => handleDeleteSlot(slot.id)}>
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </>
-                              )}
-                              {slot.status === 'blocked' && (
-                                <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px]"
-                                  onClick={() => handleUnblockSlot(slot.id)}>
-                                  <Unlock className="w-3 h-3 mr-0.5" /> Unblock
-                                </Button>
-                              )}
-                            </div>
+                            {slot.status === 'available' && !isPast && (
+                              <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px] text-destructive w-full mt-1"
+                                onClick={() => handleDeleteSlot(slot.id)}>
+                                <Trash2 className="w-3 h-3 mr-0.5" /> Remove
+                              </Button>
+                            )}
                           </div>
-                        );
-                      }) || (
-                        <p className="text-[10px] text-muted-foreground text-center py-4">No slots</p>
-                      )}
+                        )) : (
+                          <p className="text-[10px] text-muted-foreground text-center py-4">
+                            {isPast ? '—' : 'No entries'}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Mark Date as Free Dialog */}
+      <Dialog open={markFreeOpen} onOpenChange={setMarkFreeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Date as Free</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Select Date *</Label>
+              <Input
+                type="date"
+                value={freeDate}
+                min={today}
+                onChange={(e) => setFreeDate(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleMarkDateFree} className="w-full" disabled={markingFree || !freeDate}>
+              {markingFree && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Mark as Available
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

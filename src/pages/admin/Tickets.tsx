@@ -16,7 +16,7 @@ import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
 import { canTransition } from '@/lib/ticketStateMachine';
 import { getStatusLabel } from '@/lib/ticketStateMachine';
 import { 
-  ClipboardList, Loader2, User, Calendar, Clock,
+  ClipboardList, Loader2, User, Calendar,
   AlertCircle, CheckCircle, CalendarClock, CalendarCheck
 } from 'lucide-react';
 
@@ -59,11 +59,14 @@ export default function AdminTickets() {
   const [scheduleTicket, setScheduleTicket] = useState<Ticket | null>(null);
   const [scheduleVetId, setScheduleVetId] = useState('');
   const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState('');
   const [scheduling, setScheduling] = useState(false);
+
+  const today = new Date().toISOString().split('T')[0];
 
   const { slots: vetSlots, loading: slotsLoading } = useVetSlots({
     vetId: scheduleVetId || undefined,
-    dateFrom: new Date().toISOString().split('T')[0],
+    dateFrom: today,
     statusFilter: ['available'],
   });
 
@@ -124,36 +127,57 @@ export default function AdminTickets() {
     setAssigning(false);
   };
 
-  // Step 2: Schedule ticket into a slot (Waiting for Slot → Scheduled)
+  // Step 2: Schedule ticket into a date (Waiting for Slot → Scheduled)
   const handleScheduleTicket = async () => {
-    if (!scheduleTicket || !selectedSlotId) {
-      toast({ title: 'Error', description: 'Please select a time slot', variant: 'destructive' });
+    if (!scheduleTicket || (!selectedSlotId && !selectedScheduleDate)) {
+      toast({ title: 'Error', description: 'Please select a date', variant: 'destructive' });
       return;
     }
     setScheduling(true);
 
+    let slotId = selectedSlotId;
+
+    // If a custom date was picked (no existing slot), create a new slot
+    if (!slotId && selectedScheduleDate) {
+      const { data: newSlot, error: slotCreateError } = await supabase.from('vet_slots').insert({
+        vet_id: scheduleTicket.assigned_vet_id!,
+        slot_date: selectedScheduleDate,
+        start_time: '09:00',
+        end_time: '17:00',
+        status: 'booked',
+        assigned_ticket_id: scheduleTicket.id,
+      }).select('id').single();
+
+      if (slotCreateError || !newSlot) {
+        toast({ title: 'Error', description: 'Failed to create appointment', variant: 'destructive' });
+        setScheduling(false);
+        return;
+      }
+      slotId = newSlot.id;
+    } else {
+      // Book existing available slot
+      const { error: slotError } = await supabase.from('vet_slots').update({
+        status: 'booked',
+        assigned_ticket_id: scheduleTicket.id,
+      }).eq('id', slotId);
+
+      if (slotError) {
+        toast({ title: 'Error', description: 'Slot booking failed. It may already be taken.', variant: 'destructive' });
+        setScheduling(false);
+        return;
+      }
+    }
+
     // Update ticket → scheduled
     const { error: ticketError } = await supabase.from('tickets').update({
-      assigned_slot_id: selectedSlotId,
+      assigned_slot_id: slotId,
       status: 'scheduled' as any,
     }).eq('id', scheduleTicket.id);
 
     if (ticketError) {
+      // Rollback slot
+      await supabase.from('vet_slots').update({ status: 'available', assigned_ticket_id: null }).eq('id', slotId);
       toast({ title: 'Error', description: 'Failed to schedule ticket', variant: 'destructive' });
-      setScheduling(false);
-      return;
-    }
-
-    // Update slot → booked
-    const { error: slotError } = await supabase.from('vet_slots').update({
-      status: 'booked',
-      assigned_ticket_id: scheduleTicket.id,
-    }).eq('id', selectedSlotId);
-
-    if (slotError) {
-      // Rollback ticket
-      await supabase.from('tickets').update({ status: 'waiting_for_slot' as any, assigned_slot_id: null }).eq('id', scheduleTicket.id);
-      toast({ title: 'Error', description: 'Slot booking failed. Slot may already be taken.', variant: 'destructive' });
       setScheduling(false);
       return;
     }
@@ -161,11 +185,11 @@ export default function AdminTickets() {
     if (user) {
       await supabase.from('scheduling_log').insert({
         ticket_id: scheduleTicket.id,
-        slot_id: selectedSlotId,
-        action_type: 'assign',
+        slot_id: slotId,
+        action_type: 'schedule',
         performed_by_role: 'admin',
         performed_by_id: user.id,
-        notes: 'Ticket scheduled into slot',
+        notes: `Scheduled for ${selectedScheduleDate || 'selected date'}`,
       });
     }
 
@@ -174,6 +198,7 @@ export default function AdminTickets() {
     setScheduleTicket(null);
     setScheduleVetId('');
     setSelectedSlotId('');
+    setSelectedScheduleDate('');
     refetch();
     setScheduling(false);
   };
@@ -187,16 +212,11 @@ export default function AdminTickets() {
   const openScheduleDialog = (ticket: Ticket) => {
     setScheduleTicket(ticket);
     setScheduleVetId(ticket.assigned_vet_id || '');
+    setSelectedSlotId('');
+    setSelectedScheduleDate('');
     setScheduleDialogOpen(true);
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  };
 
   const TicketList = ({ ticketList, actions }: { ticketList: Ticket[]; actions?: (ticket: Ticket) => React.ReactNode }) => (
     <div className="space-y-4">
@@ -342,11 +362,11 @@ export default function AdminTickets() {
           </DialogContent>
         </Dialog>
 
-        {/* Schedule Slot Dialog */}
+        {/* Schedule Date Dialog */}
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Book Appointment Slot</DialogTitle>
+              <DialogTitle>Schedule Appointment</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               {scheduleTicket && (
@@ -361,50 +381,62 @@ export default function AdminTickets() {
 
               {scheduleVetId && (
                 <div className="space-y-2">
-                  <Label>Available Slots</Label>
                   {slotsLoading ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="w-4 h-4 animate-spin" />
                     </div>
-                  ) : vetSlots.length === 0 ? (
-                    <div className="text-sm text-muted-foreground py-4 text-center border rounded-lg">
-                      <CalendarClock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No available slots for this vet.</p>
-                      <p className="text-xs mt-1">The vet needs to create availability first.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {vetSlots.map((slot) => (
-                        <button
-                          key={slot.id}
-                          onClick={() => setSelectedSlotId(slot.id)}
-                          className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                            selectedSlotId === slot.id
-                              ? 'border-primary bg-primary/10'
-                              : 'border-border hover:bg-accent/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
+                  ) : vetSlots.length > 0 ? (
+                    <>
+                      <Label>Vet's Free Dates</Label>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {vetSlots.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => { setSelectedSlotId(slot.id); setSelectedScheduleDate(slot.slot_date); }}
+                            className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                              selectedSlotId === slot.id
+                                ? 'border-primary bg-primary/10'
+                                : 'border-border hover:bg-accent/50'
+                            }`}
+                          >
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-primary" />
                               <span className="font-medium text-sm">
-                                {new Date(slot.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                {new Date(slot.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                            </div>
-                          </div>
-                          {slot.notes && <p className="text-xs text-muted-foreground mt-1">{slot.notes}</p>}
-                        </button>
-                      ))}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">or pick another date</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-muted-foreground py-4 text-center border rounded-lg">
+                      <CalendarClock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No free dates marked by this vet.</p>
+                      <p className="text-xs mt-1">You can still pick a date below.</p>
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label>Select Date *</Label>
+                    <input
+                      type="date"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={selectedSlotId ? '' : selectedScheduleDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => { setSelectedSlotId(''); setSelectedScheduleDate(e.target.value); }}
+                    />
+                  </div>
                 </div>
               )}
 
-              <Button onClick={handleScheduleTicket} className="w-full" disabled={scheduling || !selectedSlotId}>
+              <Button onClick={handleScheduleTicket} className="w-full" disabled={scheduling || (!selectedSlotId && !selectedScheduleDate)}>
                 {scheduling && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Confirm Booking
               </Button>
