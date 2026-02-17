@@ -136,26 +136,41 @@ export default function AdminTickets() {
     setScheduling(true);
 
     let slotId = selectedSlotId;
+    let needsBookingUpdate = !!selectedSlotId;
 
-    // If a custom date was picked (no existing slot), create a new slot
+    // If a custom date was picked via date picker, check for existing available slot first
     if (!slotId && selectedScheduleDate) {
-      const { data: newSlot, error: slotCreateError } = await supabase.from('vet_slots').insert({
-        vet_id: scheduleTicket.assigned_vet_id!,
-        slot_date: selectedScheduleDate,
-        start_time: '09:00',
-        end_time: '17:00',
-        status: 'booked',
-        assigned_ticket_id: scheduleTicket.id,
-      }).select('id').single();
+      const { data: existingSlot } = await supabase.from('vet_slots')
+        .select('id')
+        .eq('vet_id', scheduleTicket.assigned_vet_id!)
+        .eq('slot_date', selectedScheduleDate)
+        .eq('status', 'available')
+        .maybeSingle();
 
-      if (slotCreateError || !newSlot) {
-        toast({ title: 'Error', description: 'Failed to create appointment', variant: 'destructive' });
-        setScheduling(false);
-        return;
+      if (existingSlot) {
+        slotId = existingSlot.id;
+        needsBookingUpdate = true;
+      } else {
+        const { data: newSlot, error: slotCreateError } = await supabase.from('vet_slots').insert({
+          vet_id: scheduleTicket.assigned_vet_id!,
+          slot_date: selectedScheduleDate,
+          start_time: '09:00',
+          end_time: '17:00',
+          status: 'booked',
+          assigned_ticket_id: scheduleTicket.id,
+        }).select('id').single();
+
+        if (slotCreateError || !newSlot) {
+          toast({ title: 'Error', description: 'Failed to create appointment', variant: 'destructive' });
+          setScheduling(false);
+          return;
+        }
+        slotId = newSlot.id;
       }
-      slotId = newSlot.id;
-    } else {
-      // Book existing available slot
+    }
+
+    // Book the existing available slot (either clicked from list or found by date lookup)
+    if (needsBookingUpdate && slotId) {
       const { error: slotError } = await supabase.from('vet_slots').update({
         status: 'booked',
         assigned_ticket_id: scheduleTicket.id,
