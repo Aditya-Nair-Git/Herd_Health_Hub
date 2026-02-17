@@ -30,6 +30,8 @@ import VetSchedule from "./pages/vet/Schedule";
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTickets from "./pages/admin/Tickets";
+import AdminVets from "./pages/admin/Vets";
+import AdminFarmers from "./pages/admin/Farmers";
 import AdminAuth from "./pages/AdminAuth";
 import AdminDemo from "./pages/AdminDemo";
 
@@ -185,6 +187,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminTickets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/vets"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminVets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/farmers"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminFarmers />
           </ProtectedRoute>
         }
       />
