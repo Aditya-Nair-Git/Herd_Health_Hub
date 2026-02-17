@@ -52,6 +52,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const adminLinks = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/tickets', label: 'Manage Tickets', icon: ClipboardList },
+    { href: '/admin/vets', label: 'Working Vets', icon: Stethoscope },
+    { href: '/admin/farmers', label: 'Registered Farmers', icon: Users },
   ];
 
   const links = userRole === 'farmer' ? farmerLinks : userRole === 'vet' ? vetLinks : adminLinks;

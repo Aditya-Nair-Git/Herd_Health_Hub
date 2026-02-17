@@ -38,11 +38,16 @@ export default function VetSchedule() {
     dateTo: endOfWeek.toISOString().split('T')[0],
   });
 
-  // Filter: only show upcoming dates. For booked, only future. For available, only today+future.
+  // Filter: only show upcoming dates. Hide slots linked to cancelled/completed tickets.
   const slots = allSlots.filter(slot => {
-    if (slot.status === 'booked') return slot.slot_date >= today;
-    if (slot.status === 'available') return slot.slot_date >= today;
-    return false; // hide blocked/other
+    if (slot.slot_date < today) return false;
+    if (slot.status === 'booked' && slot.tickets) {
+      // If the linked ticket is cancelled or completed, hide this slot
+      const ticketStatus = (slot.tickets as any)?.status;
+      if (ticketStatus === 'cancelled' || ticketStatus === 'completed') return false;
+    }
+    if (slot.status === 'available' || slot.status === 'booked') return true;
+    return false;
   });
 
   const handleMarkDateFree = async () => {

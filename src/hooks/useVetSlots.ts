@@ -18,6 +18,7 @@ export interface VetSlot {
     id: string;
     complaint: string;
     priority: string;
+    status: string;
     animals: {
       species: string;
       breed: string | null;
@@ -48,6 +49,7 @@ export function useVetSlots(options: UseVetSlotsOptions = {}) {
           id,
           complaint,
           priority,
+          status,
           animals (
             species,
             breed,
