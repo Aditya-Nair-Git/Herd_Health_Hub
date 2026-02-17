@@ -55,26 +55,41 @@ export function ScheduleTicketDialog({
     setScheduling(true);
 
     let slotId = selectedSlotId;
+    let needsBookingUpdate = !!selectedSlotId;
 
-    // If vet picked a date but no existing slot, create one
+    // If vet picked a date but no existing slot selected, check for existing available slot
     if (!slotId && selectedDate) {
-      const { data: newSlot, error: slotCreateError } = await supabase.from('vet_slots').insert({
-        vet_id: vetId,
-        slot_date: selectedDate,
-        start_time: '09:00',
-        end_time: '17:00',
-        status: 'booked',
-        assigned_ticket_id: ticketId,
-      }).select('id').single();
+      const { data: existingSlot } = await supabase.from('vet_slots')
+        .select('id')
+        .eq('vet_id', vetId)
+        .eq('slot_date', selectedDate)
+        .eq('status', 'available')
+        .maybeSingle();
 
-      if (slotCreateError || !newSlot) {
-        toast({ title: 'Error', description: 'Failed to create appointment slot', variant: 'destructive' });
-        setScheduling(false);
-        return;
+      if (existingSlot) {
+        slotId = existingSlot.id;
+        needsBookingUpdate = true;
+      } else {
+        const { data: newSlot, error: slotCreateError } = await supabase.from('vet_slots').insert({
+          vet_id: vetId,
+          slot_date: selectedDate,
+          start_time: '09:00',
+          end_time: '17:00',
+          status: 'booked',
+          assigned_ticket_id: ticketId,
+        }).select('id').single();
+
+        if (slotCreateError || !newSlot) {
+          toast({ title: 'Error', description: 'Failed to create appointment slot', variant: 'destructive' });
+          setScheduling(false);
+          return;
+        }
+        slotId = newSlot.id;
       }
-      slotId = newSlot.id;
-    } else {
-      // Book the existing available slot
+    }
+
+    // Book the existing available slot
+    if (needsBookingUpdate && slotId) {
       const { error: slotError } = await supabase.from('vet_slots').update({
         status: 'booked',
         assigned_ticket_id: ticketId,
