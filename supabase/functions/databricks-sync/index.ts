@@ -110,12 +110,34 @@ async function runDatabricksSQL(
   retries = 3
 ): Promise<{ ok: boolean; statementId?: string; error?: string }> {
   if (!DATABRICKS_HOST || !DATABRICKS_HTTP_PATH || !DATABRICKS_TOKEN) {
+    console.error("[databricks-sync] Missing env vars — HOST:", !!DATABRICKS_HOST, "PATH:", !!DATABRICKS_HTTP_PATH, "TOKEN:", !!DATABRICKS_TOKEN);
     return { ok: false, error: "Databricks env vars not configured" };
   }
 
-  // The warehouse ID is the last path segment of DATABRICKS_HTTP_PATH
-  const warehouseId = DATABRICKS_HTTP_PATH.split("/").pop();
-  if (!warehouseId) return { ok: false, error: "Invalid DATABRICKS_HTTP_PATH" };
+  // DATABRICKS_HTTP_PATH must be in the format: /sql/1.0/warehouses/<warehouse_id>
+  // e.g. /sql/1.0/warehouses/abc123ef  →  warehouse_id = abc123ef
+  // Guard against the full URL being accidentally stored (e.g. https://host.azuredatabricks.net)
+  const httpPath = DATABRICKS_HTTP_PATH.startsWith("http")
+    ? null  // misconfigured — full URL was stored instead of the path
+    : DATABRICKS_HTTP_PATH;
+
+  if (!httpPath || !httpPath.includes("/warehouses/")) {
+    console.error(
+      "[databricks-sync] DATABRICKS_HTTP_PATH is misconfigured. " +
+      "Expected format: /sql/1.0/warehouses/<warehouse_id>  Got:", DATABRICKS_HTTP_PATH
+    );
+    return {
+      ok: false,
+      error:
+        "DATABRICKS_HTTP_PATH is misconfigured. " +
+        "It must be the JDBC/ODBC HTTP Path from Databricks SQL Warehouse settings, " +
+        "e.g. /sql/1.0/warehouses/abc123ef — not a full URL.",
+    };
+  }
+
+  const warehouseId = httpPath.split("/warehouses/")[1]?.split("/")[0];
+  console.log("[databricks-sync] HOST:", DATABRICKS_HOST, "| warehouseId:", warehouseId);
+  if (!warehouseId) return { ok: false, error: "Could not extract warehouse ID from DATABRICKS_HTTP_PATH" };
 
   const body = JSON.stringify({
     warehouse_id: warehouseId,
@@ -338,16 +360,19 @@ Deno.serve(async (req: Request) => {
 
   // ── Authorisation ─────────────────────────────────────────────────────────
   // This function is called in two ways:
-  // 1. From pg_net triggers (internal, with service-role key)
-  // 2. From authenticated app users (manual sync / backfill)
-  // We accept both — the data itself is already validated by RLS upstream.
+  // 1. From pg_net database triggers (passes the project's anon key)
+  // 2. From authenticated app users (manual sync / backfill, passes JWT)
+  // The data payload comes from Postgres row data — not user-controlled input.
+  // We validate that at least one recognizable auth token is present.
   const authHeader = req.headers.get("Authorization") ?? "";
   const apiKey     = req.headers.get("apikey") ?? "";
 
-  // Must have at least one auth mechanism
+  // Accept any bearer token or apikey — pg_net sends the anon key
   if (!authHeader && !apiKey) {
     return respond({ ok: false, error: "Unauthorized" }, 401);
   }
+  // Note: we don't verify the JWT here because verify_jwt=false is set in config.toml
+  // and this function only processes internal Postgres change events.
 
   // ── Process the sync event ────────────────────────────────────────────────
   const result = await processSyncEvent(payload);

@@ -39,9 +39,15 @@ async function executeDatabricksQuery(
     throw new Error("Databricks connection not configured — missing environment variables.");
   }
 
-  // Extract warehouse_id from HTTP path (last segment)
-  const warehouseId = DATABRICKS_HTTP_PATH.split("/").pop();
-  if (!warehouseId) throw new Error("Invalid DATABRICKS_HTTP_PATH format.");
+  // Extract warehouse_id from HTTP path  e.g. /sql/1.0/warehouses/abc123ef → abc123ef
+  const warehouseId = DATABRICKS_HTTP_PATH.includes("/warehouses/")
+    ? DATABRICKS_HTTP_PATH.split("/warehouses/")[1]?.split("/")[0]
+    : DATABRICKS_HTTP_PATH.split("/").pop();
+  if (!warehouseId || warehouseId.startsWith("http") || warehouseId.includes(".")) {
+    throw new Error(
+      "DATABRICKS_HTTP_PATH is misconfigured. Expected format: /sql/1.0/warehouses/<warehouse_id>"
+    );
+  }
 
   const body = {
     warehouse_id: warehouseId,
