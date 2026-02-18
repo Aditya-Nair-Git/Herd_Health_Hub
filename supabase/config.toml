@@ -1,1 +1,7 @@
 project_id = "sgsddnzjljmybeidtkhd"
+
+[functions.databricks-connector]
+verify_jwt = false
+
+[functions.databricks-sync]
+verify_jwt = false
