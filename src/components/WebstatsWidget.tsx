@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Eye, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
 
 interface WebstatsData {
   views: number;
