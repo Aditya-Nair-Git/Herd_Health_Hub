@@ -74,108 +74,95 @@ export default function AdminAnalytics() {
   const [workloadData, setWorkloadData] = useState<{ name: string; treatments: number }[]>([]);
   const [kpis, setKpis] = useState({ vaccinationCoverage: 0, followUpCompletion: 0, ongoingMeds: 0, uniqueDiagnoses: 0 });
 
-  useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [ticketsRes, animalsRes, treatmentsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
-          supabase.from('tickets').select('status, priority').eq('is_active', true),
-          supabase.from('animals').select('animal_status').eq('is_active', true),
-          supabase.from('treatment_records').select('vet_id'),
-          supabase.from('profiles').select('user_id, full_name').eq('role', 'vet'),
-          supabase.from('vaccination_history').select('vaccination_status'),
-          supabase.from('treatment_records').select('follow_up_required, follow_up_date, course_completion_status, prescribed_medication, final_diagnosis'),
-        ]);
-
-        // Log any query errors
-        const queries = { tickets: ticketsRes, animals: animalsRes, treatments: treatmentsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
-        const errors: string[] = [];
-        for (const [name, res] of Object.entries(queries)) {
-          if (res.error) {
-            console.error(`Analytics query "${name}" failed:`, res.error);
-            errors.push(`${name}: ${res.error.message}`);
-          }
-        }
-        if (errors.length > 0) {
-          setError(`Some data failed to load: ${errors.join('; ')}`);
-        }
-
-        // Ticket stats
-        const tickets = (ticketsRes.data ?? []) as TicketRow[];
-        const statusMap: Record<string, Record<string, number>> = {};
-        for (const t of tickets) {
-          if (!statusMap[t.status]) statusMap[t.status] = { normal: 0, urgent: 0, emergency: 0 };
-          statusMap[t.status][t.priority] = (statusMap[t.status][t.priority] || 0) + 1;
-        }
-        setTicketData(
-          Object.keys(STATUS_LABELS).filter(s => statusMap[s]).map(s => ({
-            status: STATUS_LABELS[s],
-            ...statusMap[s],
-            normal: statusMap[s].normal || 0,
-            urgent: statusMap[s].urgent || 0,
-            emergency: statusMap[s].emergency || 0,
-          }))
-        );
-
-        // Animal health
-        const animals = (animalsRes.data ?? []) as AnimalRow[];
-        const healthMap: Record<string, number> = {};
-        for (const a of animals) {
-          const s = a.animal_status || 'healthy';
-          healthMap[s] = (healthMap[s] || 0) + 1;
-        }
-        setHealthData(
-          Object.entries(healthMap).map(([k, v]) => ({
-            name: HEALTH_LABELS[k] || k,
-            value: v,
-            color: HEALTH_COLORS[k] || 'hsl(var(--muted))',
-          }))
-        );
-
-        // Vet workload
-        const treatments = (treatmentsRes.data ?? []) as TreatmentRow[];
-        const profiles = (profilesRes.data ?? []) as ProfileRow[];
-        const nameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
-        const vetCount: Record<string, number> = {};
-        for (const t of treatments) {
-          vetCount[t.vet_id] = (vetCount[t.vet_id] || 0) + 1;
-        }
-        setWorkloadData(
-          Object.entries(vetCount)
-            .sort((a, b) => b[1] - a[1])
-            .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), treatments: count }))
-        );
-
-        // KPIs
-        const vaccinations = (vaccinationsRes.data ?? []) as VaccinationRow[];
-        const completedVax = vaccinations.filter(v => v.vaccination_status === 'completed').length;
-        const vaccinationCoverage = vaccinations.length ? Math.round((completedVax / vaccinations.length) * 100) : 0;
-
-        const details = (treatmentDetailsRes.data ?? []) as TreatmentDetailRow[];
-        const needFollowUp = details.filter(d => d.follow_up_required);
-        const doneFollowUp = needFollowUp.filter(d => d.course_completion_status === 'completed');
-        const followUpCompletion = needFollowUp.length ? Math.round((doneFollowUp.length / needFollowUp.length) * 100) : 0;
-        const ongoingMeds = details.filter(d => d.course_completion_status === 'ongoing' && d.prescribed_medication).length;
-        const uniqueDiagnoses = new Set(details.map(d => d.final_diagnosis).filter(Boolean)).size;
-
-        setKpis({ vaccinationCoverage, followUpCompletion, ongoingMeds, uniqueDiagnoses });
-      } catch (err) {
-        console.error('Analytics fetchAll crashed:', err);
-        setError('Failed to load analytics data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAll();
-  }, []);
-
-  const refetch = () => {
+  async function fetchAll() {
     setLoading(true);
     setError(null);
-    // Re-trigger effect by forcing re-render isn't clean; call fetchAll directly
-  };
+    try {
+      const [ticketsRes, animalsRes, treatmentsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
+        supabase.from('tickets').select('status, priority').eq('is_active', true),
+        supabase.from('animals').select('animal_status').eq('is_active', true),
+        supabase.from('treatment_records').select('vet_id'),
+        supabase.from('profiles').select('user_id, full_name').eq('role', 'vet'),
+        supabase.from('vaccination_history').select('vaccination_status'),
+        supabase.from('treatment_records').select('follow_up_required, follow_up_date, course_completion_status, prescribed_medication, final_diagnosis'),
+      ]);
 
+      const queries = { tickets: ticketsRes, animals: animalsRes, treatments: treatmentsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
+      const errors: string[] = [];
+      for (const [name, res] of Object.entries(queries)) {
+        if (res.error) {
+          console.error(`Analytics query "${name}" failed:`, res.error);
+          errors.push(`${name}: ${res.error.message}`);
+        }
+      }
+      if (errors.length > 0) {
+        setError(`Some data failed to load: ${errors.join('; ')}`);
+      }
+
+      const tickets = (ticketsRes.data ?? []) as TicketRow[];
+      const statusMap: Record<string, Record<string, number>> = {};
+      for (const t of tickets) {
+        if (!statusMap[t.status]) statusMap[t.status] = { normal: 0, urgent: 0, emergency: 0 };
+        statusMap[t.status][t.priority] = (statusMap[t.status][t.priority] || 0) + 1;
+      }
+      setTicketData(
+        Object.keys(STATUS_LABELS).filter(s => statusMap[s]).map(s => ({
+          status: STATUS_LABELS[s],
+          ...statusMap[s],
+          normal: statusMap[s].normal || 0,
+          urgent: statusMap[s].urgent || 0,
+          emergency: statusMap[s].emergency || 0,
+        }))
+      );
+
+      const animals = (animalsRes.data ?? []) as AnimalRow[];
+      const healthMap: Record<string, number> = {};
+      for (const a of animals) {
+        const s = a.animal_status || 'healthy';
+        healthMap[s] = (healthMap[s] || 0) + 1;
+      }
+      setHealthData(
+        Object.entries(healthMap).map(([k, v]) => ({
+          name: HEALTH_LABELS[k] || k,
+          value: v,
+          color: HEALTH_COLORS[k] || 'hsl(var(--muted))',
+        }))
+      );
+
+      const treatments = (treatmentsRes.data ?? []) as TreatmentRow[];
+      const profiles = (profilesRes.data ?? []) as ProfileRow[];
+      const nameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
+      const vetCount: Record<string, number> = {};
+      for (const t of treatments) {
+        vetCount[t.vet_id] = (vetCount[t.vet_id] || 0) + 1;
+      }
+      setWorkloadData(
+        Object.entries(vetCount)
+          .sort((a, b) => b[1] - a[1])
+          .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), treatments: count }))
+      );
+
+      const vaccinations = (vaccinationsRes.data ?? []) as VaccinationRow[];
+      const completedVax = vaccinations.filter(v => v.vaccination_status === 'completed').length;
+      const vaccinationCoverage = vaccinations.length ? Math.round((completedVax / vaccinations.length) * 100) : 0;
+
+      const details = (treatmentDetailsRes.data ?? []) as TreatmentDetailRow[];
+      const needFollowUp = details.filter(d => d.follow_up_required);
+      const doneFollowUp = needFollowUp.filter(d => d.course_completion_status === 'completed');
+      const followUpCompletion = needFollowUp.length ? Math.round((doneFollowUp.length / needFollowUp.length) * 100) : 0;
+      const ongoingMeds = details.filter(d => d.course_completion_status === 'ongoing' && d.prescribed_medication).length;
+      const uniqueDiagnoses = new Set(details.map(d => d.final_diagnosis).filter(Boolean)).size;
+
+      setKpis({ vaccinationCoverage, followUpCompletion, ongoingMeds, uniqueDiagnoses });
+    } catch (err) {
+      console.error('Analytics fetchAll crashed:', err);
+      setError('Failed to load analytics data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchAll(); }, []);
 
   const ticketChartConfig = {
     normal: { label: 'Normal', color: PRIORITY_COLORS.normal },
