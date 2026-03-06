@@ -68,7 +68,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <PawPrint className="w-5 h-5 text-sidebar-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-heading font-bold text-sidebar-foreground">CattleHealth</h2>
+            <h2 className="font-heading font-bold text-sidebar-foreground">Hoovrr</h2>
             <p className="text-xs text-sidebar-foreground/70 capitalize">{userRole} Portal</p>
           </div>
         </div>
@@ -133,7 +133,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </Sheet>
         <div className="flex items-center gap-2 ml-4">
           <PawPrint className="w-5 h-5 text-sidebar-primary" />
-          <span className="font-heading font-bold text-sidebar-foreground">CattleHealth</span>
+          <span className="font-heading font-bold text-sidebar-foreground">Hoovrr</span>
         </div>
       </header>
 

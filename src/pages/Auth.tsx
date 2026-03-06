@@ -98,7 +98,7 @@ export default function Auth() {
     } else {
       toast({
         title: 'Account created!',
-        description: 'Welcome to CattleHealth. You are now logged in.',
+        description: 'Welcome to Hoovrr. You are now logged in.',
       });
     }
     setIsLoading(false);
@@ -131,7 +131,7 @@ export default function Auth() {
               <PawPrint className="w-8 h-8 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-heading">CattleHealth</CardTitle>
+              <CardTitle className="text-2xl font-heading">Hoovrr</CardTitle>
               <CardDescription>Manage your livestock health with ease</CardDescription>
             </div>
           </CardHeader>

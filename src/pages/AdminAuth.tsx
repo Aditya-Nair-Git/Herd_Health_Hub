@@ -94,7 +94,7 @@ export default function AdminAuth() {
             </div>
             <div>
               <CardTitle className="text-2xl font-heading">Admin Portal</CardTitle>
-              <CardDescription>CattleHealth Administration Access</CardDescription>
+              <CardDescription>Hoovrr Administration Access</CardDescription>
             </div>
           </CardHeader>
 

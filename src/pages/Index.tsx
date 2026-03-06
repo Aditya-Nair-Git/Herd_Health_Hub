@@ -47,7 +47,7 @@ export default function Index() {
             <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
               <PawPrint className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-heading font-bold text-xl text-primary-foreground">CattleHealth</span>
+            <span className="font-heading font-bold text-xl text-primary-foreground">Hoovrr</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -147,7 +147,7 @@ export default function Index() {
               Ready to Improve Your Livestock Health Management?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join hundreds of farmers and veterinarians using CattleHealth to keep their animals healthy and productive.
+              Join hundreds of farmers and veterinarians using Hoovrr to keep their animals healthy and productive.
             </p>
             <Link to="/auth">
               <Button size="lg" className="text-base px-8">
@@ -165,14 +165,14 @@ export default function Index() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <PawPrint className="w-5 h-5 text-primary" />
-              <span className="font-heading font-semibold">CattleHealth</span>
+              <span className="font-heading font-semibold">Hoovrr</span>
             </div>
             <div className="flex items-center gap-4">
               <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Admin Login
               </Link>
               <p className="text-sm text-muted-foreground">
-                © 2026 CattleHealth Management System. All rights reserved.
+                © 2026 Hoovrr. All rights reserved.
               </p>
             </div>
           </div>
