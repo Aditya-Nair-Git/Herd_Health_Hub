@@ -15,7 +15,8 @@ import {
   ClipboardList,
   LayoutDashboard,
   Calendar,
-  Ticket
+  Ticket,
+  BarChart3
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: '/admin/tickets', label: 'Manage Tickets', icon: ClipboardList },
     { href: '/admin/vets', label: 'Working Vets', icon: Stethoscope },
     { href: '/admin/farmers', label: 'Registered Farmers', icon: Users },
+    { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
   const links = userRole === 'farmer' ? farmerLinks : userRole === 'vet' ? vetLinks : adminLinks;

@@ -32,6 +32,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminVets from "./pages/admin/Vets";
 import AdminFarmers from "./pages/admin/Farmers";
+import AdminAnalytics from "./pages/admin/Analytics";
 import AdminAuth from "./pages/AdminAuth";
 import AdminDemo from "./pages/AdminDemo";
 
@@ -203,6 +204,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminFarmers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminAnalytics />
           </ProtectedRoute>
         }
       />
