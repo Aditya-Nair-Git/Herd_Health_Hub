@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import WebStats from "./pages/WebStats";
 
 // Farmer pages
 import FarmerDashboard from "./pages/farmer/Dashboard";
@@ -73,6 +74,7 @@ function AppRoutes() {
       <Route path="/auth" element={<Auth />} />
       <Route path="/admin/login" element={<AdminAuth />} />
       <Route path="/admin/demo" element={<AdminDemo />} />
+      <Route path="/stats" element={<WebStats />} />
 
       {/* Farmer routes */}
       <Route
