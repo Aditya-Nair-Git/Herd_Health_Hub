@@ -7,6 +7,10 @@ interface WebstatsData {
   visitors: number;
 }
 
+const SITE_ID = 'fa3d3c5bbfe60412';
+const BASE_URL = 'https://webstats.creekdata.workers.dev';
+const API_KEY = 'wl_02b7a1d4ec63ed0db733d04efa9a8f858cf4bcf1f90a08f7823518ead66a1a2e';
+
 export function WebstatsWidget() {
   const [stats, setStats] = useState<WebstatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,24 +18,37 @@ export function WebstatsWidget() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/webstats?interval=30d`,
-          { headers: { 'Content-Type': 'application/json' } }
-        );
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const url = `${BASE_URL}/resources/stats?site=${SITE_ID}&interval=30d&tz=${encodeURIComponent(tz)}`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${API_KEY}`,
+          },
+        });
 
         if (!response.ok) {
-          console.error('Webstats fetch error:', response.status);
+          // Try cookie-based auth as fallback
+          const fallback = await fetch(url, {
+            credentials: 'include',
+            headers: { 'Cookie': `token=${API_KEY}` },
+          });
+          if (!fallback.ok) {
+            console.error('Webstats: all auth methods failed');
+            setLoading(false);
+            return;
+          }
+          const data = await fallback.json();
+          setStats({ views: data.views ?? 0, visitors: data.visitors ?? 0 });
           setLoading(false);
           return;
         }
 
         const data = await response.json();
-        if (data && typeof data === 'object') {
-          const views = data.views ?? data.pageviews ?? 0;
-          const visitors = data.visitors ?? data.visits ?? 0;
-          setStats({ views, visitors });
-        }
+        setStats({
+          views: data.views ?? data.pageviews ?? 0,
+          visitors: data.visitors ?? data.visits ?? 0,
+        });
       } catch (err) {
         console.error('Webstats error:', err);
       } finally {
