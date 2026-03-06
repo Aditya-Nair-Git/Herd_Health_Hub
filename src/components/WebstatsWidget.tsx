@@ -27,8 +27,8 @@ export function WebstatsWidget() {
           return;
         }
 
+        const data = await response.json();
         if (data && typeof data === 'object') {
-          // Counterscale returns { views, visitors } or similar shape
           const views = data.views ?? data.pageviews ?? 0;
           const visitors = data.visitors ?? data.visits ?? 0;
           setStats({ views, visitors });
