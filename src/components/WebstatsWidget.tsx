@@ -15,13 +15,14 @@ export function WebstatsWidget() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { data, error } = await supabase.functions.invoke('webstats', {
-          body: null,
-          method: 'GET',
-        });
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/webstats?interval=30d`,
+          { headers: { 'Content-Type': 'application/json' } }
+        );
 
-        if (error) {
-          console.error('Webstats fetch error:', error);
+        if (!response.ok) {
+          console.error('Webstats fetch error:', response.status);
           setLoading(false);
           return;
         }
