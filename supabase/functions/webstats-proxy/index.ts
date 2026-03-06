@@ -34,15 +34,30 @@ Deno.serve(async (req) => {
 
   try {
     const targetUrl = `${BASE_URL}/${endpoint}?site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
-    console.log('Fetching:', targetUrl);
     
-    const response = await fetch(targetUrl, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
+    // Use Cloudflare DNS-over-HTTPS to resolve the domain first
+    const dnsResp = await fetch('https://1.1.1.1/dns-query?name=webstats.creekdata.workers.dev&type=A', {
+      headers: { 'Accept': 'application/dns-json' },
     });
-
+    const dnsData = await dnsResp.json();
+    console.log('DNS resolved:', JSON.stringify(dnsData));
+    
+    const ip = dnsData?.Answer?.[0]?.data;
+    let fetchUrl = targetUrl;
+    const fetchHeaders: Record<string, string> = {
+      'Authorization': `Bearer ${apiKey}`,
+    };
+    
+    if (ip) {
+      // Replace domain with IP and set Host header
+      fetchUrl = targetUrl.replace('webstats.creekdata.workers.dev', ip);
+      fetchHeaders['Host'] = 'webstats.creekdata.workers.dev';
+    }
+    
+    console.log('Fetching:', fetchUrl);
+    const response = await fetch(fetchUrl, { headers: fetchHeaders });
     console.log('Response status:', response.status);
     const text = await response.text();
-    console.log('Response body preview:', text.substring(0, 500));
     
     return new Response(text, {
       status: response.status,
