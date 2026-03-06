@@ -34,17 +34,23 @@ Deno.serve(async (req) => {
 
   try {
     const targetUrl = `${BASE_URL}/${endpoint}?site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
+    console.log('Fetching:', targetUrl);
+    
     const response = await fetch(targetUrl, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
 
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
+    console.log('Response status:', response.status);
+    const text = await response.text();
+    console.log('Response body preview:', text.substring(0, 500));
+    
+    return new Response(text, {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Proxy request failed' }), {
+    console.error('Proxy error:', err);
+    return new Response(JSON.stringify({ error: 'Proxy request failed', detail: String(err) }), {
       status: 502,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
