@@ -170,6 +170,13 @@ export default function AdminAnalytics() {
     fetchAll();
   }, []);
 
+  const refetch = () => {
+    setLoading(true);
+    setError(null);
+    // Re-trigger effect by forcing re-render isn't clean; call fetchAll directly
+  };
+
+
   const ticketChartConfig = {
     normal: { label: 'Normal', color: PRIORITY_COLORS.normal },
     urgent: { label: 'Urgent', color: PRIORITY_COLORS.urgent },
