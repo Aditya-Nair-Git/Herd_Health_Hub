@@ -7,11 +7,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { ArrowLeft, Eye, Users, Globe, Monitor, FileText, BarChart3 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-const SITE_ID = 'fa3d3c5bbfe60412';
-const BASE_URL = 'https://webstats.creekdata.workers.dev';
-const API_KEY = 'wl_02b7a1d4ec63ed0db733d04efa9a8f858cf4bcf1f90a08f7823518ead66a1a2e';
-
-const headers = { 'Authorization': `Bearer ${API_KEY}` };
+const PROXY_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/webstats-proxy`;
 
 interface StatsData { views: number; visitors: number; }
 interface TimeseriesPoint { date: string; views: number; visitors: number; }
@@ -23,7 +19,7 @@ function useWebstatsEndpoint<T>(endpoint: string, transform: (data: any) => T) {
 
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    fetch(`${BASE_URL}${endpoint}?site=${SITE_ID}&interval=30d&tz=${encodeURIComponent(tz)}`, { headers })
+    fetch(`${PROXY_URL}?endpoint=${endpoint.replace('/resources/', '')}&interval=30d&tz=${encodeURIComponent(tz)}`)
       .then(r => r.ok ? r.json() : Promise.reject('Failed'))
       .then(d => setData(transform(d)))
       .catch(e => console.error(`Webstats ${endpoint}:`, e))
