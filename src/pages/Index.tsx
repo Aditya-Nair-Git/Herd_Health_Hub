@@ -57,6 +57,11 @@ export default function Index() {
                 About
               </Button>
             </Link>
+            <Link to="/stats">
+              <Button variant="ghost" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
+                Site Stats
+              </Button>
+            </Link>
             <Link to="/auth">
               <Button variant="secondary" className="shadow-lg">
                 Login / Sign Up
@@ -168,8 +173,11 @@ export default function Index() {
               <PawPrint className="w-5 h-5 text-primary" />
               <span className="font-heading font-semibold">Hoovrr</span>
             </div>
-            <WebstatsWidget />
+            <Link to="/stats"><WebstatsWidget /></Link>
             <div className="flex items-center gap-4">
+              <Link to="/stats" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Site Stats
+              </Link>
               <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Admin Login
               </Link>
