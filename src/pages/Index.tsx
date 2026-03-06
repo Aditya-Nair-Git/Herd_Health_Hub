@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { WebstatsWidget } from '@/components/WebstatsWidget';
 import { 
   PawPrint, 
   Stethoscope, 
@@ -167,6 +168,7 @@ export default function Index() {
               <PawPrint className="w-5 h-5 text-primary" />
               <span className="font-heading font-semibold">Hoovrr</span>
             </div>
+            <WebstatsWidget />
             <div className="flex items-center gap-4">
               <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Admin Login
