@@ -5,9 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/ui/stat-card';
 import { ArrowLeft, Eye, Users, Globe, Monitor, FileText, BarChart3 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const PROXY_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/webstats-proxy`;
+const SITE_ID = 'fa3d3c5bbfe60412';
+const BASE_URL = 'https://webstats.creekdata.workers.dev';
+const API_KEY = 'wl_02b7a1d4ec63ed0db733d04efa9a8f858cf4bcf1f90a08f7823518ead66a1a2e';
+
+const headers = { 'Authorization': `Bearer ${API_KEY}` };
 
 interface StatsData { views: number; visitors: number; }
 interface TimeseriesPoint { date: string; views: number; visitors: number; }
@@ -19,8 +23,8 @@ function useWebstatsEndpoint<T>(endpoint: string, transform: (data: any) => T) {
 
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    fetch(`${PROXY_URL}?endpoint=${endpoint.replace('/resources/', '')}&interval=30d&tz=${encodeURIComponent(tz)}`)
-      .then(r => r.ok ? r.json() : Promise.reject('Failed'))
+    fetch(`${BASE_URL}${endpoint}?site=${SITE_ID}&interval=30d&tz=${encodeURIComponent(tz)}`, { headers })
+      .then(r => r.ok ? r.json() : Promise.reject(`Failed: ${r.status}`))
       .then(d => setData(transform(d)))
       .catch(e => console.error(`Webstats ${endpoint}:`, e))
       .finally(() => setLoading(false));
@@ -103,7 +107,6 @@ export default function WebStats() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {statsLoading ? (
             <>
@@ -118,7 +121,6 @@ export default function WebStats() {
           ) : null}
         </div>
 
-        {/* Timeseries Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Traffic Over Time</CardTitle>
@@ -143,7 +145,6 @@ export default function WebStats() {
           </CardContent>
         </Card>
 
-        {/* Breakdowns */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <BreakdownCard title="Top Pages" icon={<FileText className="w-4 h-4 text-primary" />} items={pages} loading={pagesLoading} />
           <BreakdownCard title="Browsers" icon={<Monitor className="w-4 h-4 text-primary" />} items={browsers} loading={browsersLoading} />
