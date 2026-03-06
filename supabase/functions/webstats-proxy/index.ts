@@ -5,50 +5,14 @@ const corsHeaders = {
 
 const ALLOWED_ENDPOINTS = ['stats', 'timeseries', 'paths', 'browser', 'country'];
 const SITE_ID = 'fa3d3c5bbfe60412';
+const HOSTNAME = 'webstats.creekdata.workers.dev';
 
-async function resolveIP(hostname: string): Promise<string | null> {
-  // Try multiple DNS-over-HTTPS providers and record types
-  const queries = [
-    `https://dns.google/resolve?name=${hostname}&type=A`,
-    `https://dns.google/resolve?name=${hostname}&type=AAAA`,
-    `https://1.1.1.1/dns-query?name=${hostname}&type=AAAA`,
-    `https://1.1.1.1/dns-query?name=${hostname}&type=A`,
-  ];
-
-  for (const url of queries) {
-    try {
-      const resp = await fetch(url, {
-        headers: { 'Accept': 'application/dns-json' },
-      });
-      const data = await resp.json();
-      console.log(`DNS query ${url} result:`, JSON.stringify(data));
-      
-      if (data?.Answer?.length > 0) {
-        // Find A or AAAA record (skip CNAME, type 5)
-        const record = data.Answer.find((a: any) => a.type === 1 || a.type === 28);
-        if (record) {
-          return record.data;
-        }
-        // If only CNAME, follow it
-        const cname = data.Answer.find((a: any) => a.type === 5);
-        if (cname) {
-          console.log('Got CNAME:', cname.data, 'trying to resolve...');
-          // Try to resolve the CNAME target
-          const cnameResp = await fetch(`https://dns.google/resolve?name=${cname.data}&type=A`, {
-            headers: { 'Accept': 'application/dns-json' },
-          });
-          const cnameData = await cnameResp.json();
-          console.log('CNAME resolution:', JSON.stringify(cnameData));
-          const aRecord = cnameData?.Answer?.find((a: any) => a.type === 1 || a.type === 28);
-          if (aRecord) return aRecord.data;
-        }
-      }
-    } catch (e) {
-      console.warn(`DNS query failed for ${url}:`, e);
-    }
-  }
-  return null;
-}
+// Cloudflare anycast IPs - workers.dev domains are served from these
+const CLOUDFLARE_IPS = [
+  '104.21.0.1',
+  '172.67.0.1', 
+  '104.16.0.1',
+];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -75,57 +39,49 @@ Deno.serve(async (req) => {
     });
   }
 
-  const hostname = 'webstats.creekdata.workers.dev';
+  const queryString = `site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
+  const path = `/resources/${endpoint}?${queryString}`;
 
+  // Try direct fetch first (in case DNS works)
   try {
-    // First, try resolving via DNS-over-HTTPS and use IP directly
-    const ip = await resolveIP(hostname);
-    
-    const queryString = `site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
-    
-    if (ip) {
-      // Use IP with Host header to bypass local DNS
-      const isIPv6 = ip.includes(':');
-      const host = isIPv6 ? `[${ip}]` : ip;
-      const fetchUrl = `https://${host}/resources/${endpoint}?${queryString}`;
-      console.log('Fetching via IP:', fetchUrl, 'Host:', hostname);
-      
-      try {
-        const response = await fetch(fetchUrl, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Host': hostname,
-          },
-        });
-        console.log('IP fetch response status:', response.status);
-        const text = await response.text();
-        return new Response(text, {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (ipErr) {
-        console.warn('IP-based fetch failed, trying direct:', ipErr);
-      }
-    }
-
-    // Fallback: try direct fetch (in case runtime DNS works)
-    const directUrl = `https://${hostname}/resources/${endpoint}?${queryString}`;
-    console.log('Trying direct fetch:', directUrl);
-    const response = await fetch(directUrl, {
+    console.log('Trying direct fetch...');
+    const response = await fetch(`https://${HOSTNAME}${path}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
-    console.log('Direct fetch response status:', response.status);
+    console.log('Direct fetch succeeded:', response.status);
     const text = await response.text();
-    
     return new Response(text, {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (err) {
-    console.error('Proxy error:', err);
-    return new Response(JSON.stringify({ error: 'Proxy request failed', detail: String(err) }), {
-      status: 502,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  } catch (directErr) {
+    console.warn('Direct fetch failed:', String(directErr));
   }
+
+  // Fallback: try Cloudflare anycast IPs with Host header
+  for (const ip of CLOUDFLARE_IPS) {
+    try {
+      const fetchUrl = `https://${ip}${path}`;
+      console.log(`Trying Cloudflare IP ${ip}...`);
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Host': HOSTNAME,
+        },
+      });
+      console.log(`IP ${ip} response:`, response.status);
+      const text = await response.text();
+      return new Response(text, {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      console.warn(`IP ${ip} failed:`, String(e));
+    }
+  }
+
+  return new Response(JSON.stringify({ error: 'All proxy attempts failed. CreekData API unreachable from this environment.' }), {
+    status: 502,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 });
