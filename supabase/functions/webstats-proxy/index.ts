@@ -4,8 +4,15 @@ const corsHeaders = {
 };
 
 const ALLOWED_ENDPOINTS = ['stats', 'timeseries', 'paths', 'browser', 'country'];
-const BASE_URL = 'https://webstats.creekdata.workers.dev/resources';
 const SITE_ID = 'fa3d3c5bbfe60412';
+const HOSTNAME = 'webstats.creekdata.workers.dev';
+
+// Cloudflare anycast IPs - workers.dev domains are served from these
+const CLOUDFLARE_IPS = [
+  '104.21.0.1',
+  '172.67.0.1', 
+  '104.16.0.1',
+];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,42 +39,49 @@ Deno.serve(async (req) => {
     });
   }
 
+  const queryString = `site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
+  const path = `/resources/${endpoint}?${queryString}`;
+
+  // Try direct fetch first (in case DNS works)
   try {
-    const targetUrl = `${BASE_URL}/${endpoint}?site=${SITE_ID}&interval=${interval}&tz=${encodeURIComponent(tz)}`;
-    
-    // Use Cloudflare DNS-over-HTTPS to resolve the domain first
-    const dnsResp = await fetch('https://1.1.1.1/dns-query?name=webstats.creekdata.workers.dev&type=A', {
-      headers: { 'Accept': 'application/dns-json' },
+    console.log('Trying direct fetch...');
+    const response = await fetch(`https://${HOSTNAME}${path}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
     });
-    const dnsData = await dnsResp.json();
-    console.log('DNS resolved:', JSON.stringify(dnsData));
-    
-    const ip = dnsData?.Answer?.[0]?.data;
-    let fetchUrl = targetUrl;
-    const fetchHeaders: Record<string, string> = {
-      'Authorization': `Bearer ${apiKey}`,
-    };
-    
-    if (ip) {
-      // Replace domain with IP and set Host header
-      fetchUrl = targetUrl.replace('webstats.creekdata.workers.dev', ip);
-      fetchHeaders['Host'] = 'webstats.creekdata.workers.dev';
-    }
-    
-    console.log('Fetching:', fetchUrl);
-    const response = await fetch(fetchUrl, { headers: fetchHeaders });
-    console.log('Response status:', response.status);
+    console.log('Direct fetch succeeded:', response.status);
     const text = await response.text();
-    
     return new Response(text, {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (err) {
-    console.error('Proxy error:', err);
-    return new Response(JSON.stringify({ error: 'Proxy request failed', detail: String(err) }), {
-      status: 502,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  } catch (directErr) {
+    console.warn('Direct fetch failed:', String(directErr));
   }
+
+  // Fallback: try Cloudflare anycast IPs with Host header
+  for (const ip of CLOUDFLARE_IPS) {
+    try {
+      const fetchUrl = `https://${ip}${path}`;
+      console.log(`Trying Cloudflare IP ${ip}...`);
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Host': HOSTNAME,
+        },
+      });
+      console.log(`IP ${ip} response:`, response.status);
+      const text = await response.text();
+      return new Response(text, {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      console.warn(`IP ${ip} failed:`, String(e));
+    }
+  }
+
+  return new Response(JSON.stringify({ error: 'All proxy attempts failed. CreekData API unreachable from this environment.' }), {
+    status: 502,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 });
