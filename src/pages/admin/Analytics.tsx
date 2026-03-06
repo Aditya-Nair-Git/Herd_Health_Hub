@@ -1,11 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Component, type ReactNode } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
+import { Button } from '@/components/ui/button';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Loader2, Syringe, ClipboardCheck, Pill, Stethoscope } from 'lucide-react';
+import { Loader2, Syringe, ClipboardCheck, Pill, Stethoscope, AlertTriangle, RefreshCw } from 'lucide-react';
+
+class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) { console.error('Chart render error:', error); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <AlertTriangle className="w-6 h-6 mb-2" />
+          <p className="text-sm">Chart failed to render</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type TicketRow = { status: string; priority: string };
 type AnimalRow = { animal_status: string | null };
