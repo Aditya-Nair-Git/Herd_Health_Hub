@@ -189,6 +189,16 @@ export default function AdminAnalytics() {
       <div className="space-y-6">
         <h1 className="text-3xl font-heading font-bold text-foreground">Analytics</h1>
 
+        {error && (
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+            <p className="text-sm text-destructive flex-1">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchAll}>
+              <RefreshCw className="w-4 h-4 mr-1" /> Retry
+            </Button>
+          </div>
+        )}
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Vaccination Coverage" value={`${kpis.vaccinationCoverage}%`} icon={<Syringe className="w-5 h-5" />} />
@@ -206,17 +216,19 @@ export default function AdminAnalytics() {
             {ticketData.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-8">No ticket data available</p>
             ) : (
-              <ChartContainer config={ticketChartConfig} className="h-[300px] w-full">
-                <BarChart data={ticketData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                  <XAxis dataKey="status" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="normal" fill="var(--color-normal)" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="urgent" fill="var(--color-urgent)" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="emergency" fill="var(--color-emergency)" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
+              <ChartErrorBoundary>
+                <ChartContainer config={ticketChartConfig} className="h-[300px] w-full">
+                  <BarChart data={ticketData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                    <XAxis dataKey="status" tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="normal" fill="var(--color-normal)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="urgent" fill="var(--color-urgent)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="emergency" fill="var(--color-emergency)" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </ChartErrorBoundary>
             )}
           </CardContent>
         </Card>
@@ -231,28 +243,30 @@ export default function AdminAnalytics() {
               {healthData.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-8">No animal data available</p>
               ) : (
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={healthData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {healthData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <ChartErrorBoundary>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={healthData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {healthData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </ChartErrorBoundary>
               )}
             </CardContent>
           </Card>
@@ -266,20 +280,21 @@ export default function AdminAnalytics() {
               {workloadData.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-8">No treatment data available</p>
               ) : (
-                <ChartContainer config={workloadChartConfig} className="h-[300px] w-full">
-                  <BarChart data={workloadData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} className="fill-muted-foreground" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="treatments" fill="var(--color-treatments)" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ChartContainer>
+                <ChartErrorBoundary>
+                  <ChartContainer config={workloadChartConfig} className="h-[300px] w-full">
+                    <BarChart data={workloadData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} className="fill-muted-foreground" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="treatments" fill="var(--color-treatments)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                </ChartErrorBoundary>
               )}
             </CardContent>
           </Card>
         </div>
-      </div>
     </DashboardLayout>
   );
 }
