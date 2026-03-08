@@ -6,7 +6,6 @@ import {
   Home, 
   PawPrint, 
   Plus, 
-  Search, 
   FileText, 
   Users, 
   LogOut, 
