@@ -78,10 +78,10 @@ export default function AdminAnalytics() {
     setLoading(true);
     setError(null);
     try {
-      const [ticketsRes, animalsRes, treatmentsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
+      const [ticketsRes, animalsRes, activeTicketsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
         supabase.from('tickets').select('status, priority').eq('is_active', true),
         supabase.from('animals').select('animal_status').eq('is_active', true),
-        supabase.from('treatment_records').select('vet_id'),
+        supabase.from('tickets').select('assigned_vet_id').eq('is_active', true).not('status', 'in', '("completed","cancelled")'),
         supabase.from('profiles').select('user_id, full_name').eq('role', 'vet'),
         supabase.from('vaccination_history').select('vaccination_status'),
         supabase.from('treatment_records').select('follow_up_required, follow_up_date, course_completion_status, prescribed_medication, final_diagnosis'),
