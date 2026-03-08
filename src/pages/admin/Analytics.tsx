@@ -27,7 +27,7 @@ class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 type TicketRow = { status: string; priority: string };
 type AnimalRow = { animal_status: string | null };
-type TreatmentRow = { vet_id: string };
+type ActiveTicketRow = { assigned_vet_id: string | null };
 type ProfileRow = { user_id: string; full_name: string };
 type VaccinationRow = { vaccination_status: string };
 type TreatmentDetailRow = { follow_up_required: boolean | null; follow_up_date: string | null; course_completion_status: string | null; prescribed_medication: string | null; final_diagnosis: string | null };
