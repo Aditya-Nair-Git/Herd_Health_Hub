@@ -8,12 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScheduleCard } from '@/components/ui/schedule-card';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { MedicationCard } from '@/components/medication/MedicationCard';
-import { AppointmentTimer } from '@/components/ui/appointment-timer';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
-import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
+
 import { useActiveMedications } from '@/hooks/useActiveMedications';
 import { 
   ClipboardList, 
@@ -64,7 +64,7 @@ export default function VetDashboard() {
     inProgressTickets 
   } = useTickets({ vetId: user?.id });
 
-  const { scheduledVaccinations: missedVacs, loading: vaccinationsLoading } = useVaccinationHistory({ vetId: user?.id });
+  const { activeMeds, loading: medsLoading } = useActiveMedications({ vetId: user?.id });
   const { activeMeds, loading: medsLoading } = useActiveMedications({ vetId: user?.id });
 
   const myActiveTickets = [...assignedTickets, ...inProgressTickets, ...tickets.filter(t => t.status === 'waiting_for_slot' || t.status === 'scheduled')];
