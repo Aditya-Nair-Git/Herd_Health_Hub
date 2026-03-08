@@ -173,7 +173,7 @@ export default function AdminAnalytics() {
   };
 
   const workloadChartConfig = {
-    treatments: { label: 'Treatments', color: 'hsl(var(--primary))' },
+    cases: { label: 'Active Cases', color: 'hsl(var(--primary))' },
   };
 
   if (loading) {
