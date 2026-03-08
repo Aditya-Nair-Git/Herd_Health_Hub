@@ -6,7 +6,6 @@ import {
   Home, 
   PawPrint, 
   Plus, 
-  Search, 
   FileText, 
   Users, 
   LogOut, 
@@ -45,7 +44,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const vetLinks = [
     { href: '/vet', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/vet/search', label: 'Search Animal', icon: Search },
+    { href: '/vet/records', label: 'Animal Records', icon: FileText },
     { href: '/vet/cases', label: 'My Cases', icon: ClipboardList },
     { href: '/vet/schedule', label: 'My Schedule', icon: Calendar },
   ];

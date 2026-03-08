@@ -8,12 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScheduleCard } from '@/components/ui/schedule-card';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { MedicationCard } from '@/components/medication/MedicationCard';
-import { AppointmentTimer } from '@/components/ui/appointment-timer';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTickets } from '@/hooks/useTickets';
-import { useVaccinationHistory } from '@/hooks/useVaccinationHistory';
+
 import { useActiveMedications } from '@/hooks/useActiveMedications';
 import { 
   ClipboardList, 
@@ -64,7 +64,6 @@ export default function VetDashboard() {
     inProgressTickets 
   } = useTickets({ vetId: user?.id });
 
-  const { scheduledVaccinations: missedVacs, loading: vaccinationsLoading } = useVaccinationHistory({ vetId: user?.id });
   const { activeMeds, loading: medsLoading } = useActiveMedications({ vetId: user?.id });
 
   const myActiveTickets = [...assignedTickets, ...inProgressTickets, ...tickets.filter(t => t.status === 'waiting_for_slot' || t.status === 'scheduled')];
@@ -335,66 +334,30 @@ export default function VetDashboard() {
           </Card>
         </div>
 
-        {/* Active Medications & Scheduled Vaccines */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Pill className="w-5 h-5 text-primary" />
-                Active Medications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {medsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : activeMeds.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No active medications prescribed</p>
-              ) : (
-                <div className="space-y-3">
-                  {activeMeds.slice(0, 5).map((med) => (
-                    <MedicationCard key={med.id} medication={med} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Syringe className="w-5 h-5 text-warning" />
-                Scheduled Vaccines
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {vaccinationsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : missedVacs.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No pending vaccinations</p>
-              ) : (
-                <div className="space-y-3">
-                  {missedVacs.slice(0, 5).map((vac) => (
-                    <div key={vac.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <div>
-                        <p className="font-medium text-sm">{vac.vaccine_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {vac.next_due_date ? `Due: ${new Date(vac.next_due_date).toLocaleDateString()}` : 'No due date set'}
-                        </p>
-                      </div>
-                      {vac.next_due_date && (
-                        <AppointmentTimer appointmentDate={vac.next_due_date} status="scheduled" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {/* Active Medications */}
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Pill className="w-5 h-5 text-primary" />
+              Active Medications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {medsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : activeMeds.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4">No active medications prescribed</p>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {activeMeds.slice(0, 6).map((med) => (
+                  <MedicationCard key={med.id} medication={med} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

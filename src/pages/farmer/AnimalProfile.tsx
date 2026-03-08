@@ -485,48 +485,6 @@ export default function AnimalProfile() {
               </Card>
             )}
 
-            {/* Vet Visits */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Veterinary Visits
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {vetEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No veterinary visits recorded</p>
-                ) : (
-                  <div className="space-y-4">
-                    {vetEntries.map((entry) => (
-                      <div key={entry.id} className="p-4 rounded-lg border bg-card">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="font-medium">
-                            Visit on {new Date(entry.visit_date).toLocaleDateString()}
-                          </p>
-                          {entry.continuing_medication && (
-                            <Badge variant="secondary">Continuing Medication</Badge>
-                          )}
-                        </div>
-                        {entry.vet_diagnosis && (
-                          <p className="text-sm mb-2">
-                            <span className="text-muted-foreground">Diagnosis:</span> {entry.vet_diagnosis}
-                          </p>
-                        )}
-                        {entry.vet_prescribed_medication && (
-                          <p className="text-sm mb-2">
-                            <span className="text-muted-foreground">Medication:</span> {entry.vet_prescribed_medication}
-                          </p>
-                        )}
-                        {entry.notes && (
-                          <p className="text-sm text-muted-foreground">{entry.notes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Sidebar */}
