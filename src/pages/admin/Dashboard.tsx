@@ -255,6 +255,9 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Vet Workload */}
+              <VetWorkloadWidget />
             </div>
           </TabsContent>
 

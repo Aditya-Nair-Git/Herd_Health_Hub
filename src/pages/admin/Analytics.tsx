@@ -289,7 +289,7 @@ export default function AdminAnalytics() {
                       <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} className="fill-muted-foreground" />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="treatments" fill="var(--color-treatments)" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="cases" fill="var(--color-cases)" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ChartContainer>
                 </ChartErrorBoundary>

@@ -72,11 +72,18 @@ export function useTickets(options: UseTicketsOptions = {}) {
     const { data, error } = await query;
 
     if (!error && data) {
-      const typedData = data.map(item => ({
-        ...item,
-        priority: item.priority as TicketPriority,
-        status: item.status as TicketStatus,
-      }));
+      const priorityOrder: Record<TicketPriority, number> = { emergency: 0, urgent: 1, normal: 2 };
+      const typedData = data
+        .map(item => ({
+          ...item,
+          priority: item.priority as TicketPriority,
+          status: item.status as TicketStatus,
+        }))
+        .sort((a, b) => {
+          const pDiff = priorityOrder[a.priority as TicketPriority] - priorityOrder[b.priority as TicketPriority];
+          if (pDiff !== 0) return pDiff;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
       setTickets(typedData);
     }
     setLoading(false);
