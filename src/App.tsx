@@ -23,7 +23,7 @@ import FarmerCreateTicket from "./pages/farmer/CreateTicket";
 
 // Vet pages
 import VetDashboard from "./pages/vet/Dashboard";
-import VetSearch from "./pages/vet/Search";
+import VetAnimalRecords from "./pages/vet/AnimalRecords";
 import VetCases from "./pages/vet/Cases";
 import VetAnimalRecord from "./pages/vet/AnimalRecord";
 import VetSchedule from "./pages/vet/Schedule";
@@ -136,10 +136,10 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/vet/search"
+        path="/vet/records"
         element={
           <ProtectedRoute allowedRoles={['vet', 'admin']}>
-            <VetSearch />
+            <VetAnimalRecords />
           </ProtectedRoute>
         }
       />
