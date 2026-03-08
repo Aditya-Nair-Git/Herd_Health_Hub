@@ -280,7 +280,7 @@ export default function AdminAnalytics() {
             </CardHeader>
             <CardContent>
               {workloadData.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-8">No treatment data available</p>
+                <p className="text-muted-foreground text-sm text-center py-8">No active case data available</p>
               ) : (
                 <ChartErrorBoundary>
                   <ChartContainer config={workloadChartConfig} className="h-[300px] w-full">
