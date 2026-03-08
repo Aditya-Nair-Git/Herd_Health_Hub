@@ -193,16 +193,26 @@ export default function VetDashboard() {
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-warning" />
                 Assigned Tickets
+                {myActiveTickets.some(t => t.priority === 'emergency') && (
+                  <Badge variant="outline" className="bg-destructive/20 text-destructive ml-2">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Emergency
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {myActiveTickets.slice(0, 6).map((ticket) => (
-                  <TicketCard
+                  <div
                     key={ticket.id}
-                    ticket={ticket}
-                    linkPrefix="/vet/animal"
-                  />
+                    className={ticket.priority === 'emergency' ? 'border-l-4 border-destructive rounded-lg' : ticket.priority === 'urgent' ? 'border-l-4 border-warning rounded-lg' : ''}
+                  >
+                    <TicketCard
+                      ticket={ticket}
+                      linkPrefix="/vet/animal"
+                    />
+                  </div>
                 ))}
               </div>
             </CardContent>

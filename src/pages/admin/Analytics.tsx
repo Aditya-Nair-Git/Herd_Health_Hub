@@ -27,7 +27,7 @@ class ChartErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 type TicketRow = { status: string; priority: string };
 type AnimalRow = { animal_status: string | null };
-type TreatmentRow = { vet_id: string };
+type ActiveTicketRow = { assigned_vet_id: string | null };
 type ProfileRow = { user_id: string; full_name: string };
 type VaccinationRow = { vaccination_status: string };
 type TreatmentDetailRow = { follow_up_required: boolean | null; follow_up_date: string | null; course_completion_status: string | null; prescribed_medication: string | null; final_diagnosis: string | null };
@@ -71,23 +71,23 @@ export default function AdminAnalytics() {
   const [error, setError] = useState<string | null>(null);
   const [ticketData, setTicketData] = useState<{ status: string; normal: number; urgent: number; emergency: number }[]>([]);
   const [healthData, setHealthData] = useState<{ name: string; value: number; color: string }[]>([]);
-  const [workloadData, setWorkloadData] = useState<{ name: string; treatments: number }[]>([]);
+  const [workloadData, setWorkloadData] = useState<{ name: string; cases: number }[]>([]);
   const [kpis, setKpis] = useState({ vaccinationCoverage: 0, followUpCompletion: 0, ongoingMeds: 0, uniqueDiagnoses: 0 });
 
   async function fetchAll() {
     setLoading(true);
     setError(null);
     try {
-      const [ticketsRes, animalsRes, treatmentsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
+      const [ticketsRes, animalsRes, activeTicketsRes, profilesRes, vaccinationsRes, treatmentDetailsRes] = await Promise.all([
         supabase.from('tickets').select('status, priority').eq('is_active', true),
         supabase.from('animals').select('animal_status').eq('is_active', true),
-        supabase.from('treatment_records').select('vet_id'),
+        supabase.from('tickets').select('assigned_vet_id').eq('is_active', true).not('status', 'in', '("completed","cancelled")'),
         supabase.from('profiles').select('user_id, full_name').eq('role', 'vet'),
         supabase.from('vaccination_history').select('vaccination_status'),
         supabase.from('treatment_records').select('follow_up_required, follow_up_date, course_completion_status, prescribed_medication, final_diagnosis'),
       ]);
 
-      const queries = { tickets: ticketsRes, animals: animalsRes, treatments: treatmentsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
+      const queries = { tickets: ticketsRes, animals: animalsRes, activeTickets: activeTicketsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
       const errors: string[] = [];
       for (const [name, res] of Object.entries(queries)) {
         if (res.error) {
@@ -129,17 +129,19 @@ export default function AdminAnalytics() {
         }))
       );
 
-      const treatments = (treatmentsRes.data ?? []) as TreatmentRow[];
+      const activeTickets = (activeTicketsRes.data ?? []) as ActiveTicketRow[];
       const profiles = (profilesRes.data ?? []) as ProfileRow[];
       const nameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
       const vetCount: Record<string, number> = {};
-      for (const t of treatments) {
-        vetCount[t.vet_id] = (vetCount[t.vet_id] || 0) + 1;
+      for (const t of activeTickets) {
+        if (t.assigned_vet_id) {
+          vetCount[t.assigned_vet_id] = (vetCount[t.assigned_vet_id] || 0) + 1;
+        }
       }
       setWorkloadData(
         Object.entries(vetCount)
           .sort((a, b) => b[1] - a[1])
-          .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), treatments: count }))
+          .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), cases: count }))
       );
 
       const vaccinations = (vaccinationsRes.data ?? []) as VaccinationRow[];
@@ -171,7 +173,7 @@ export default function AdminAnalytics() {
   };
 
   const workloadChartConfig = {
-    treatments: { label: 'Treatments', color: 'hsl(var(--primary))' },
+    cases: { label: 'Active Cases', color: 'hsl(var(--primary))' },
   };
 
   if (loading) {
@@ -274,11 +276,11 @@ export default function AdminAnalytics() {
           {/* Vet Workload */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Vet Workload</CardTitle>
+              <CardTitle className="text-lg">Vet Workload (Active Cases)</CardTitle>
             </CardHeader>
             <CardContent>
               {workloadData.length === 0 ? (
-                <p className="text-muted-foreground text-sm text-center py-8">No treatment data available</p>
+                <p className="text-muted-foreground text-sm text-center py-8">No active case data available</p>
               ) : (
                 <ChartErrorBoundary>
                   <ChartContainer config={workloadChartConfig} className="h-[300px] w-full">
@@ -287,7 +289,7 @@ export default function AdminAnalytics() {
                       <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} className="fill-muted-foreground" />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={100} className="fill-muted-foreground" />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="treatments" fill="var(--color-treatments)" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="cases" fill="var(--color-cases)" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ChartContainer>
                 </ChartErrorBoundary>
