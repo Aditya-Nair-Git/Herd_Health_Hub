@@ -276,7 +276,7 @@ export default function AdminAnalytics() {
           {/* Vet Workload */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Vet Workload</CardTitle>
+              <CardTitle className="text-lg">Vet Workload (Active Cases)</CardTitle>
             </CardHeader>
             <CardContent>
               {workloadData.length === 0 ? (
