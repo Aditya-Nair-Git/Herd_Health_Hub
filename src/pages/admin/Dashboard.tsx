@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TicketCard } from '@/components/tickets/TicketCard';
 import { AdminReports } from '@/components/admin/AdminReports';
+import { VetWorkloadWidget } from '@/components/admin/VetWorkloadWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useTickets } from '@/hooks/useTickets';
