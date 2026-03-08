@@ -254,8 +254,8 @@ export default function VetAnimalRecord() {
       <DashboardLayout>
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">Animal not found</h2>
-          <Link to="/vet/search">
-            <Button variant="outline">Back to Search</Button>
+          <Link to="/vet/records">
+            <Button variant="outline">Back to Animal Records</Button>
           </Link>
         </div>
       </DashboardLayout>
@@ -271,7 +271,7 @@ export default function VetAnimalRecord() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link to="/vet/search">
+            <Link to="/vet/records">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="w-5 h-5" />
               </Button>

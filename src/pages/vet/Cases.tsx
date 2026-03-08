@@ -185,9 +185,9 @@ export default function VetCases() {
                   <p className="text-muted-foreground mb-6">
                     Search for an animal to add your first case
                   </p>
-                  <Link to="/vet/search">
+                  <Link to="/vet/records">
                     <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                      Search Animals
+                      Animal Records
                     </button>
                   </Link>
                 </CardContent>
