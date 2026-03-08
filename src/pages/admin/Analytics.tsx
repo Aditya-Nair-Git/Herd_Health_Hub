@@ -87,7 +87,7 @@ export default function AdminAnalytics() {
         supabase.from('treatment_records').select('follow_up_required, follow_up_date, course_completion_status, prescribed_medication, final_diagnosis'),
       ]);
 
-      const queries = { tickets: ticketsRes, animals: animalsRes, treatments: treatmentsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
+      const queries = { tickets: ticketsRes, animals: animalsRes, activeTickets: activeTicketsRes, profiles: profilesRes, vaccinations: vaccinationsRes, treatmentDetails: treatmentDetailsRes };
       const errors: string[] = [];
       for (const [name, res] of Object.entries(queries)) {
         if (res.error) {
