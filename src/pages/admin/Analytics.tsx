@@ -129,17 +129,19 @@ export default function AdminAnalytics() {
         }))
       );
 
-      const treatments = (treatmentsRes.data ?? []) as TreatmentRow[];
+      const activeTickets = (activeTicketsRes.data ?? []) as ActiveTicketRow[];
       const profiles = (profilesRes.data ?? []) as ProfileRow[];
       const nameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
       const vetCount: Record<string, number> = {};
-      for (const t of treatments) {
-        vetCount[t.vet_id] = (vetCount[t.vet_id] || 0) + 1;
+      for (const t of activeTickets) {
+        if (t.assigned_vet_id) {
+          vetCount[t.assigned_vet_id] = (vetCount[t.assigned_vet_id] || 0) + 1;
+        }
       }
       setWorkloadData(
         Object.entries(vetCount)
           .sort((a, b) => b[1] - a[1])
-          .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), treatments: count }))
+          .map(([id, count]) => ({ name: nameMap[id] || id.slice(0, 8), cases: count }))
       );
 
       const vaccinations = (vaccinationsRes.data ?? []) as VaccinationRow[];
