@@ -71,7 +71,7 @@ export default function AdminAnalytics() {
   const [error, setError] = useState<string | null>(null);
   const [ticketData, setTicketData] = useState<{ status: string; normal: number; urgent: number; emergency: number }[]>([]);
   const [healthData, setHealthData] = useState<{ name: string; value: number; color: string }[]>([]);
-  const [workloadData, setWorkloadData] = useState<{ name: string; treatments: number }[]>([]);
+  const [workloadData, setWorkloadData] = useState<{ name: string; cases: number }[]>([]);
   const [kpis, setKpis] = useState({ vaccinationCoverage: 0, followUpCompletion: 0, ongoingMeds: 0, uniqueDiagnoses: 0 });
 
   async function fetchAll() {
