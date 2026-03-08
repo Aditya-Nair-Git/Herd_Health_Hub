@@ -287,9 +287,9 @@ export default function VetDashboard() {
                 <div className="text-center py-8">
                   <Stethoscope className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
                   <p className="text-muted-foreground text-sm">No cases recorded yet</p>
-                  <Link to="/vet/search">
+                  <Link to="/vet/records">
                     <Button variant="outline" size="sm" className="mt-3">
-                      Search for an Animal
+                      Browse Animal Records
                     </Button>
                   </Link>
                 </div>
