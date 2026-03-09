@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
-import { ScheduleDialog } from '@/components/scheduling/ScheduleDialog';
+import { TicketMessages } from '@/components/tickets/TicketMessages';
 import { EditScheduleDialog } from '@/components/scheduling/EditScheduleDialog';
 import { TreatmentFormDialog } from '@/components/treatment/TreatmentFormDialog';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
