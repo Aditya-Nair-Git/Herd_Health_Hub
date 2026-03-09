@@ -237,6 +237,23 @@ export function TreatmentFormDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, symptoms_observed: e.target.value }))} rows={2} />
           </div>
           <div className="space-y-2">
+            <Label>Select Disease (for prediction tracking)</Label>
+            <Select value={selectedDiseaseId} onValueChange={(v) => {
+              setSelectedDiseaseId(v);
+              const disease = diseases.find(d => d.id === parseInt(v));
+              if (disease && !formData.final_diagnosis) {
+                setFormData(prev => ({ ...prev, final_diagnosis: disease.name }));
+              }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select a disease..." /></SelectTrigger>
+              <SelectContent>
+                {diseases.map(d => (
+                  <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Final Diagnosis *</Label>
             <Input placeholder="Enter diagnosis" value={formData.final_diagnosis}
               onChange={(e) => setFormData(prev => ({ ...prev, final_diagnosis: e.target.value }))} />
