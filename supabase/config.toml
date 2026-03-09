@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.webstats-proxy]
 verify_jwt = false
+
+[functions.databricks-weight-update]
+verify_jwt = false

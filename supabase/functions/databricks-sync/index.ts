@@ -86,6 +86,16 @@ const TABLE_CONFIG: Record<string, {
     primaryKey:  "id",
     softDelete:  false,
   },
+  prediction_results: {
+    deltaTable:  "cattle_health.prediction_results",
+    primaryKey:  "id",
+    softDelete:  false,
+  },
+  weight_adjustments: {
+    deltaTable:  "cattle_health.weight_adjustments",
+    primaryKey:  "id",
+    softDelete:  false,
+  },
 };
 
 // ─── Webhook payload (Supabase Database Webhook format) ──────────────────────
