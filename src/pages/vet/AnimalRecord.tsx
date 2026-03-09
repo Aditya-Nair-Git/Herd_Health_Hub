@@ -19,6 +19,7 @@ import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { VaccinationFormDialog } from '@/components/vaccination/VaccinationFormDialog';
 import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { DecisionSupportPanel } from '@/components/prediction/DecisionSupportPanel';
 import { AddMedicationDialog } from '@/components/medication/AddMedicationDialog';
 import { MedicationCard } from '@/components/medication/MedicationCard';
 import { VetNotesSection } from '@/components/vet-notes/VetNotesSection';
