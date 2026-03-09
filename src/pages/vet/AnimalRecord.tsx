@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { SymptomSelect } from '@/components/ui/symptom-select';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
-import { ScheduleDialog } from '@/components/scheduling/ScheduleDialog';
+import { TicketMessages } from '@/components/tickets/TicketMessages';
 import { EditScheduleDialog } from '@/components/scheduling/EditScheduleDialog';
 import { TreatmentFormDialog } from '@/components/treatment/TreatmentFormDialog';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
@@ -299,12 +299,6 @@ export default function VetAnimalRecord() {
               vetId={user?.id || ''}
               onVaccinationSaved={refetchVaccinations}
             />
-            <ScheduleDialog
-              animalId={animal.animal_id}
-              farmerId={animal.farmer_id}
-              vetId={user?.id || ''}
-              onScheduleCreated={refetchSchedules}
-            />
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -462,6 +456,11 @@ export default function VetAnimalRecord() {
                           </Button>
                         }
                       />
+                    )}
+                    {(ticket.status === 'scheduled' || ticket.status === 'in_progress') && user && (
+                      <div className="mt-2">
+                        <TicketMessages ticketId={ticket.id} currentUserId={user.id} currentUserRole="vet" />
+                      </div>
                     )}
                   </div>
                 ))}

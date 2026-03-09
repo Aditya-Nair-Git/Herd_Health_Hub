@@ -17,6 +17,9 @@ interface Schedule {
     species: string;
     farmer_name: string;
   } | null;
+  vet_profile: {
+    full_name: string;
+  } | null;
 }
 
 interface UseSchedulesOptions {
@@ -61,11 +64,21 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     const { data, error } = await query;
 
     if (!error && data) {
-      // Cast the data to handle the enum types properly
+      // Fetch vet profiles for all unique vet_ids
+      const vetIds = [...new Set(data.map(item => item.vet_id))];
+      const { data: vetProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', vetIds);
+
+      const vetMap: Record<string, { full_name: string }> = {};
+      vetProfiles?.forEach(p => { vetMap[p.user_id] = { full_name: p.full_name }; });
+
       const typedData = data.map(item => ({
         ...item,
         appointment_type: item.appointment_type as 'vaccination' | 'follow_up',
         status: item.status as 'scheduled' | 'completed' | 'cancelled' | 'overdue',
+        vet_profile: vetMap[item.vet_id] || null,
       }));
       setSchedules(typedData);
     }
@@ -75,7 +88,6 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   useEffect(() => {
     fetchSchedules();
     
-    // Subscribe to realtime updates
     const channel = supabase
       .channel('schedules-changes')
       .on(

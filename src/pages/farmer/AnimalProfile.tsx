@@ -12,6 +12,7 @@ import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
 import { CreateTicketDialog } from '@/components/tickets/CreateTicketDialog';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { TicketMessages } from '@/components/tickets/TicketMessages';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { MedicationCard } from '@/components/medication/MedicationCard';
@@ -302,7 +303,12 @@ export default function AnimalProfile() {
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-3">
                 {activeTickets.map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} linkPrefix="/farmer/animals" showAnimalInfo={false} />
+                  <div key={ticket.id} className="space-y-2">
+                    <TicketCard ticket={ticket} linkPrefix="/farmer/animals" showAnimalInfo={false} />
+                    {(ticket.status === 'scheduled' || ticket.status === 'in_progress') && user && (
+                      <TicketMessages ticketId={ticket.id} currentUserId={user.id} currentUserRole="farmer" />
+                    )}
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -514,6 +520,12 @@ export default function AnimalProfile() {
                         </div>
                         <AppointmentTimer appointmentDate={schedule.appointment_date} status={schedule.status} />
                       </div>
+                      {schedule.vet_profile && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Stethoscope className="w-3 h-3 text-primary" />
+                          <span className="font-medium">Dr. {schedule.vet_profile.full_name}</span>
+                        </div>
+                      )}
                       {schedule.vaccine_name && (
                         <p className="text-sm text-muted-foreground">{schedule.vaccine_name}</p>
                       )}

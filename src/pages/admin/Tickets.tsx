@@ -173,6 +173,19 @@ export default function AdminTickets() {
       return;
     }
 
+    // Also insert into schedules table so farmer can see the appointment
+    const appointmentDate = selectedScheduleDate || vetSlots.find(s => s.id === selectedSlotId)?.slot_date;
+    if (appointmentDate && scheduleTicket.animal_id && scheduleTicket.assigned_vet_id) {
+      await supabase.from('schedules').insert({
+        animal_id: scheduleTicket.animal_id,
+        vet_id: scheduleTicket.assigned_vet_id,
+        farmer_id: scheduleTicket.farmer_id,
+        appointment_type: 'follow_up',
+        appointment_date: appointmentDate,
+        notes: `Ticket: ${scheduleTicket.complaint?.slice(0, 80)}`,
+      });
+    }
+
     if (user) {
       await supabase.from('scheduling_log').insert({
         ticket_id: scheduleTicket.id,

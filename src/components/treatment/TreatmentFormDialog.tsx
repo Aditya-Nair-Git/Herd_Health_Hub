@@ -207,9 +207,9 @@ export function TreatmentFormDialog({
               onChange={(e) => setFormData(prev => ({ ...prev, prescribed_medication: e.target.value }))} />
           </div>
           <div className="space-y-2">
-            <Label>Dosage</Label>
-            <Input placeholder="e.g., 2 tablets twice daily" value={formData.dosage}
-              onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))} />
+            <Label>Dosage Instructions</Label>
+            <Textarea placeholder="e.g., 2 tablets twice daily for 5 days" value={formData.dosage}
+              onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))} rows={2} />
           </div>
 
           {formData.prescribed_medication && (
@@ -226,21 +226,6 @@ export function TreatmentFormDialog({
                   <Input type="date" value={formData.medication_end_date} min={formData.medication_start_date}
                     onChange={(e) => setFormData(prev => ({ ...prev, medication_end_date: e.target.value }))} />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Dosage Frequency</Label>
-                <Select value={formData.dosage_frequency}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, dosage_frequency: value }))}>
-                  <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="once_daily">Once Daily</SelectItem>
-                    <SelectItem value="twice_daily">Twice Daily</SelectItem>
-                    <SelectItem value="three_times_daily">Three Times Daily</SelectItem>
-                    <SelectItem value="every_other_day">Every Other Day</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="as_needed">As Needed</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Course Status</Label>

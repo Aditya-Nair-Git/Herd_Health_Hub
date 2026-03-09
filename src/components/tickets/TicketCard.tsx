@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ClipboardList, AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import { ClipboardList, AlertTriangle, AlertCircle, Clock, Calendar, Stethoscope } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import type { Ticket, TicketPriority, TicketStatus } from '@/hooks/useTickets';
 
 interface TicketCardProps {
@@ -27,12 +29,44 @@ const statusConfig: Record<TicketStatus, { label: string; className: string }> =
   cancelled: { label: 'Cancelled', className: 'bg-muted text-muted-foreground' },
 };
 
+interface SlotInfo {
+  slot_date: string;
+  vet_name: string;
+}
+
 export function TicketCard({ ticket, linkPrefix, showAnimalInfo = true, className }: TicketCardProps) {
   const priority = priorityConfig[ticket.priority];
   const status = statusConfig[ticket.status];
   const PriorityIcon = priority.icon;
-  
   const symptoms = [ticket.symptom_1, ticket.symptom_2, ticket.symptom_3].filter(Boolean);
+  const [slotInfo, setSlotInfo] = useState<SlotInfo | null>(null);
+
+  useEffect(() => {
+    if (ticket.assigned_slot_id) {
+      fetchSlotInfo();
+    }
+  }, [ticket.assigned_slot_id]);
+
+  const fetchSlotInfo = async () => {
+    const { data: slot } = await supabase
+      .from('vet_slots')
+      .select('slot_date, vet_id')
+      .eq('id', ticket.assigned_slot_id!)
+      .single();
+
+    if (slot) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', slot.vet_id)
+        .single();
+
+      setSlotInfo({
+        slot_date: slot.slot_date,
+        vet_name: profile?.full_name || 'Assigned Vet',
+      });
+    }
+  };
 
   return (
     <Link 
@@ -84,7 +118,7 @@ export function TicketCard({ ticket, linkPrefix, showAnimalInfo = true, classNam
       </p>
 
       {symptoms.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 mb-2">
           {symptoms.map((symptom, i) => (
             <Badge key={i} variant="secondary" className="text-xs">
               {symptom}
@@ -93,7 +127,20 @@ export function TicketCard({ ticket, linkPrefix, showAnimalInfo = true, classNam
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground mt-2">
+      {slotInfo && (
+        <div className="p-2 rounded-md bg-primary/5 border border-primary/10 mb-2 space-y-1">
+          <div className="flex items-center gap-1.5 text-xs">
+            <Stethoscope className="w-3 h-3 text-primary" />
+            <span className="font-medium">Dr. {slotInfo.vet_name}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Calendar className="w-3 h-3" />
+            <span>{new Date(slotInfo.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">
         Created {new Date(ticket.created_at).toLocaleDateString()}
       </p>
     </Link>
