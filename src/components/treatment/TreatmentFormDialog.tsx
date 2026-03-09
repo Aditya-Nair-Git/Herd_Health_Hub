@@ -168,6 +168,40 @@ export function TreatmentFormDialog({
       }
     }
 
+    // Store prediction results and feedback if disease was selected
+    if (selectedDiseaseId && ticketId && predictions.length > 0) {
+      const actualId = parseInt(selectedDiseaseId);
+      const topPrediction = predictions[0];
+      const wasCorrect = topPrediction.disease_id === actualId;
+
+      // Store prediction result
+      const { data: predResult } = await supabase.from('prediction_results').insert({
+        ticket_id: ticketId,
+        predicted_disease_id: topPrediction.disease_id,
+        predicted_rank: 1,
+        actual_disease_id: actualId,
+        was_correct: wasCorrect,
+      }).select('id').single();
+
+      // Store prediction symptoms
+      if (predResult && symptomIds.length > 0) {
+        await supabase.from('prediction_symptoms').insert(
+          symptomIds.map(sid => ({ prediction_id: predResult.id, symptom_id: sid }))
+        );
+      }
+
+      // If incorrect, queue weight adjustments
+      if (!wasCorrect && symptomIds.length > 0) {
+        await supabase.from('weight_adjustments').insert(
+          symptomIds.map(sid => ({
+            symptom_id: sid,
+            predicted_disease_id: topPrediction.disease_id,
+            actual_disease_id: actualId,
+          }))
+        );
+      }
+    }
+
     toast({ title: 'Treatment Saved', description: 'The treatment record has been saved successfully.' });
 
     setOpen(false);
