@@ -441,6 +441,11 @@ export default function VetAnimalRecord() {
                       <Badge variant="outline">{ticket.status}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{ticket.complaint}</p>
+                    {ticket.assigned_vet_id === user?.id && (
+                      <div className="mt-2">
+                        <DecisionSupportPanel ticketId={ticket.id} />
+                      </div>
+                    )}
                     {ticket.assigned_vet_id === user?.id && ticket.status !== 'completed' && (
                       <TreatmentFormDialog
                         ticketId={ticket.id}

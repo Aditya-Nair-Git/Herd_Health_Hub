@@ -84,7 +84,7 @@ export default function CreateTicketPage() {
 
     setSubmitting(true);
     const animal = animals.find(a => a.animal_id === selectedAnimal);
-    const { error } = await supabase.from('tickets').insert({
+    const { data: ticketData, error } = await supabase.from('tickets').insert({
       animal_id: selectedAnimal,
       farmer_id: user?.id,
       farmer_name: animal?.farmer_name || profile?.full_name || '',
@@ -94,11 +94,26 @@ export default function CreateTicketPage() {
       symptom_3: formData.symptom_3 || null,
       priority: formData.priority,
       status: 'created',
-    });
+    }).select('id').single();
 
-    if (error) {
+    if (error || !ticketData) {
       toast({ title: 'Error', description: 'Failed to create ticket', variant: 'destructive' });
     } else {
+      // Store ticket_symptoms (resolve symptom names to IDs)
+      const selectedSymptoms = [formData.symptom_1, formData.symptom_2, formData.symptom_3].filter(s => s && s !== 'None');
+      if (selectedSymptoms.length > 0) {
+        const { data: symptomRows } = await supabase
+          .from('symptoms_master')
+          .select('id, name')
+          .in('name', selectedSymptoms);
+
+        if (symptomRows && symptomRows.length > 0) {
+          await supabase.from('ticket_symptoms').insert(
+            symptomRows.map(s => ({ ticket_id: ticketData.id, symptom_id: s.id }))
+          );
+        }
+      }
+
       toast({ title: 'Ticket Created', description: 'Your checkup ticket has been submitted.' });
       navigate('/farmer/tickets');
     }
