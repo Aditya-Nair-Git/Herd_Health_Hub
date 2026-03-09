@@ -303,7 +303,12 @@ export default function AnimalProfile() {
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-3">
                 {activeTickets.map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} linkPrefix="/farmer/animals" showAnimalInfo={false} />
+                  <div key={ticket.id} className="space-y-2">
+                    <TicketCard ticket={ticket} linkPrefix="/farmer/animals" showAnimalInfo={false} />
+                    {(ticket.status === 'scheduled' || ticket.status === 'in_progress') && user && (
+                      <TicketMessages ticketId={ticket.id} currentUserId={user.id} currentUserRole="farmer" />
+                    )}
+                  </div>
                 ))}
               </div>
             </CardContent>
