@@ -457,6 +457,11 @@ export default function VetAnimalRecord() {
                         }
                       />
                     )}
+                    {(ticket.status === 'scheduled' || ticket.status === 'in_progress') && user && (
+                      <div className="mt-2">
+                        <TicketMessages ticketId={ticket.id} currentUserId={user.id} currentUserRole="vet" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
