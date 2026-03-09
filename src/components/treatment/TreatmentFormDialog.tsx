@@ -205,6 +205,7 @@ export function TreatmentFormDialog({
     toast({ title: 'Treatment Saved', description: 'The treatment record has been saved successfully.' });
 
     setOpen(false);
+    setSelectedDiseaseId('');
     setFormData({
       symptoms_observed: '', final_diagnosis: '', prescribed_medication: '', dosage: '',
       continuing_medication: false, follow_up_required: false, follow_up_date: '', vet_notes: '',
