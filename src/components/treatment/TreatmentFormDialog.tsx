@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { useDiseases } from '@/hooks/useDiseases';
+import { useDiseasePrediction } from '@/hooks/useDiseasePrediction';
 
 interface TreatmentFormDialogProps {
   ticketId?: string;
@@ -28,8 +30,11 @@ export function TreatmentFormDialog({
 }: TreatmentFormDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { diseases } = useDiseases();
+  const { predictions, symptomIds } = useDiseasePrediction(ticketId);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedDiseaseId, setSelectedDiseaseId] = useState<string>('');
   const [formData, setFormData] = useState({
     symptoms_observed: '',
     final_diagnosis: '',
@@ -163,9 +168,44 @@ export function TreatmentFormDialog({
       }
     }
 
+    // Store prediction results and feedback if disease was selected
+    if (selectedDiseaseId && ticketId && predictions.length > 0) {
+      const actualId = parseInt(selectedDiseaseId);
+      const topPrediction = predictions[0];
+      const wasCorrect = topPrediction.disease_id === actualId;
+
+      // Store prediction result
+      const { data: predResult } = await supabase.from('prediction_results').insert({
+        ticket_id: ticketId,
+        predicted_disease_id: topPrediction.disease_id,
+        predicted_rank: 1,
+        actual_disease_id: actualId,
+        was_correct: wasCorrect,
+      }).select('id').single();
+
+      // Store prediction symptoms
+      if (predResult && symptomIds.length > 0) {
+        await supabase.from('prediction_symptoms').insert(
+          symptomIds.map(sid => ({ prediction_id: predResult.id, symptom_id: sid }))
+        );
+      }
+
+      // If incorrect, queue weight adjustments
+      if (!wasCorrect && symptomIds.length > 0) {
+        await supabase.from('weight_adjustments').insert(
+          symptomIds.map(sid => ({
+            symptom_id: sid,
+            predicted_disease_id: topPrediction.disease_id,
+            actual_disease_id: actualId,
+          }))
+        );
+      }
+    }
+
     toast({ title: 'Treatment Saved', description: 'The treatment record has been saved successfully.' });
 
     setOpen(false);
+    setSelectedDiseaseId('');
     setFormData({
       symptoms_observed: '', final_diagnosis: '', prescribed_medication: '', dosage: '',
       continuing_medication: false, follow_up_required: false, follow_up_date: '', vet_notes: '',
@@ -195,6 +235,23 @@ export function TreatmentFormDialog({
             <Label>Symptoms Observed</Label>
             <Textarea placeholder="Describe observed symptoms..." value={formData.symptoms_observed}
               onChange={(e) => setFormData(prev => ({ ...prev, symptoms_observed: e.target.value }))} rows={2} />
+          </div>
+          <div className="space-y-2">
+            <Label>Select Disease (for prediction tracking)</Label>
+            <Select value={selectedDiseaseId} onValueChange={(v) => {
+              setSelectedDiseaseId(v);
+              const disease = diseases.find(d => d.id === parseInt(v));
+              if (disease && !formData.final_diagnosis) {
+                setFormData(prev => ({ ...prev, final_diagnosis: disease.name }));
+              }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select a disease..." /></SelectTrigger>
+              <SelectContent>
+                {diseases.map(d => (
+                  <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Final Diagnosis *</Label>

@@ -25,6 +25,7 @@ const ALLOWED_QUERY_TYPES = [
   "vet_workload",
   "scheduling_log",
   "custom_select",
+  "prediction_accuracy",
 ] as const;
 
 type QueryType = (typeof ALLOWED_QUERY_TYPES)[number];
@@ -179,10 +180,25 @@ function buildQuery(queryType: QueryType, params: Record<string, string>): {
 
     case "analytics":
     case "custom_select":
-      // For analytics we use a restricted pre-approved SELECT only
-      // The sql must be provided by internal callers only (never raw user input)
       return {
         sql: params.sql ?? "SELECT 1",
+        parameters: {},
+      };
+
+    case "prediction_accuracy":
+      return {
+        sql: `
+          SELECT
+            d.name AS disease_name,
+            COUNT(*) AS total_predictions,
+            SUM(CASE WHEN pr.was_correct THEN 1 ELSE 0 END) AS correct,
+            ROUND(SUM(CASE WHEN pr.was_correct THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS accuracy_pct
+          FROM cattle_health.prediction_results pr
+          JOIN cattle_health.diseases d ON d.id = pr.predicted_disease_id
+          WHERE pr.was_correct IS NOT NULL
+          GROUP BY d.name
+          ORDER BY total_predictions DESC
+        `,
         parameters: {},
       };
 

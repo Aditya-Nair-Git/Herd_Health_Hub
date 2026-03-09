@@ -164,6 +164,63 @@ export type Database = {
         }
         Relationships: []
       }
+      disease_symptoms: {
+        Row: {
+          disease_id: number
+          id: string
+          symptom_id: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          disease_id: number
+          id?: string
+          symptom_id: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          disease_id?: number
+          id?: string
+          symptom_id?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disease_symptoms_disease_id_fkey"
+            columns: ["disease_id"]
+            isOneToOne: false
+            referencedRelation: "diseases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disease_symptoms_symptom_id_fkey"
+            columns: ["symptom_id"]
+            isOneToOne: false
+            referencedRelation: "symptoms_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diseases: {
+        Row: {
+          description: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          description?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          description?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       farmer_entries: {
         Row: {
           age: number | null
@@ -223,6 +280,91 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "animals"
             referencedColumns: ["animal_id"]
+          },
+        ]
+      }
+      prediction_results: {
+        Row: {
+          actual_disease_id: number | null
+          created_at: string
+          id: string
+          predicted_disease_id: number
+          predicted_rank: number
+          ticket_id: string
+          was_correct: boolean | null
+        }
+        Insert: {
+          actual_disease_id?: number | null
+          created_at?: string
+          id?: string
+          predicted_disease_id: number
+          predicted_rank: number
+          ticket_id: string
+          was_correct?: boolean | null
+        }
+        Update: {
+          actual_disease_id?: number | null
+          created_at?: string
+          id?: string
+          predicted_disease_id?: number
+          predicted_rank?: number
+          ticket_id?: string
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_results_actual_disease_id_fkey"
+            columns: ["actual_disease_id"]
+            isOneToOne: false
+            referencedRelation: "diseases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_results_predicted_disease_id_fkey"
+            columns: ["predicted_disease_id"]
+            isOneToOne: false
+            referencedRelation: "diseases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_results_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_symptoms: {
+        Row: {
+          id: string
+          prediction_id: string
+          symptom_id: string
+        }
+        Insert: {
+          id?: string
+          prediction_id: string
+          symptom_id: string
+        }
+        Update: {
+          id?: string
+          prediction_id?: string
+          symptom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_symptoms_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "prediction_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_symptoms_symptom_id_fkey"
+            columns: ["symptom_id"]
+            isOneToOne: false
+            referencedRelation: "symptoms_master"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -406,6 +548,39 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_symptoms: {
+        Row: {
+          id: string
+          symptom_id: string
+          ticket_id: string
+        }
+        Insert: {
+          id?: string
+          symptom_id: string
+          ticket_id: string
+        }
+        Update: {
+          id?: string
+          symptom_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_symptoms_symptom_id_fkey"
+            columns: ["symptom_id"]
+            isOneToOne: false
+            referencedRelation: "symptoms_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_symptoms_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
@@ -786,6 +961,55 @@ export type Database = {
             columns: ["assigned_ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weight_adjustments: {
+        Row: {
+          actual_disease_id: number
+          created_at: string
+          id: string
+          predicted_disease_id: number
+          processed: boolean
+          symptom_id: string
+        }
+        Insert: {
+          actual_disease_id: number
+          created_at?: string
+          id?: string
+          predicted_disease_id: number
+          processed?: boolean
+          symptom_id: string
+        }
+        Update: {
+          actual_disease_id?: number
+          created_at?: string
+          id?: string
+          predicted_disease_id?: number
+          processed?: boolean
+          symptom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weight_adjustments_actual_disease_id_fkey"
+            columns: ["actual_disease_id"]
+            isOneToOne: false
+            referencedRelation: "diseases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weight_adjustments_predicted_disease_id_fkey"
+            columns: ["predicted_disease_id"]
+            isOneToOne: false
+            referencedRelation: "diseases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weight_adjustments_symptom_id_fkey"
+            columns: ["symptom_id"]
+            isOneToOne: false
+            referencedRelation: "symptoms_master"
             referencedColumns: ["id"]
           },
         ]
