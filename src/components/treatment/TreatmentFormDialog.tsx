@@ -30,8 +30,11 @@ export function TreatmentFormDialog({
 }: TreatmentFormDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { diseases } = useDiseases();
+  const { predictions, symptomIds } = useDiseasePrediction(ticketId);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedDiseaseId, setSelectedDiseaseId] = useState<string>('');
   const [formData, setFormData] = useState({
     symptoms_observed: '',
     final_diagnosis: '',
