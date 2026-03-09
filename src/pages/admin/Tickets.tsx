@@ -6,24 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useTickets, type Ticket, type TicketStatus } from '@/hooks/useTickets';
-import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
-import { canTransition } from '@/lib/ticketStateMachine';
-import { getStatusLabel } from '@/lib/ticketStateMachine';
+import { useVetSlots } from '@/hooks/useVetSlots';
+import { useVetWorkloads } from '@/hooks/useVetWorkloads';
+import { canTransition, getStatusLabel } from '@/lib/ticketStateMachine';
 import { 
   ClipboardList, Loader2, User, Calendar,
-  AlertCircle, CheckCircle, CalendarClock, CalendarCheck
+  AlertCircle, CheckCircle, CalendarClock, CalendarCheck,
+  Stethoscope, TrendingUp, Siren
 } from 'lucide-react';
-
-interface VetProfile {
-  user_id: string;
-  full_name: string;
-}
 
 const priorityConfig: Record<string, { label: string; className: string }> = {
   normal: { label: 'Normal', className: 'bg-muted text-muted-foreground' },
@@ -45,7 +40,7 @@ export default function AdminTickets() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { tickets, loading, refetch, createdTickets, assignedTickets, waitingForSlotTickets, scheduledTickets, inProgressTickets, completedTickets } = useTickets();
-  const [vets, setVets] = useState<VetProfile[]>([]);
+  const { vets: vetWorkloads, loading: workloadsLoading } = useVetWorkloads();
 
   // Assign dialog state
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -69,21 +64,6 @@ export default function AdminTickets() {
     dateFrom: today,
     statusFilter: ['available'],
   });
-
-  useEffect(() => {
-    fetchVets();
-  }, []);
-
-  const fetchVets = async () => {
-    const { data: vetRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'vet');
-    if (!vetRoles) return;
-    const vetProfiles: VetProfile[] = [];
-    for (const role of vetRoles) {
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', role.user_id).single();
-      if (profile) vetProfiles.push({ user_id: role.user_id, full_name: profile.full_name });
-    }
-    setVets(vetProfiles);
-  };
 
   // Step 1: Assign vet to ticket (Created → Assigned → Waiting for Slot)
   const handleAssignTicket = async () => {
@@ -138,7 +118,6 @@ export default function AdminTickets() {
     let slotId = selectedSlotId;
     let needsBookingUpdate = !!selectedSlotId;
 
-    // If a custom date was picked via date picker, check for existing available slot first
     if (!slotId && selectedScheduleDate) {
       const { data: existingSlot } = await supabase.from('vet_slots')
         .select('id')
@@ -169,7 +148,6 @@ export default function AdminTickets() {
       }
     }
 
-    // Book the existing available slot (either clicked from list or found by date lookup)
     if (needsBookingUpdate && slotId) {
       const { error: slotError } = await supabase.from('vet_slots').update({
         status: 'booked',
@@ -183,14 +161,12 @@ export default function AdminTickets() {
       }
     }
 
-    // Update ticket → scheduled
     const { error: ticketError } = await supabase.from('tickets').update({
       assigned_slot_id: slotId,
       status: 'scheduled' as any,
     }).eq('id', scheduleTicket.id);
 
     if (ticketError) {
-      // Rollback slot
       await supabase.from('vet_slots').update({ status: 'available', assigned_ticket_id: null }).eq('id', slotId);
       toast({ title: 'Error', description: 'Failed to schedule ticket', variant: 'destructive' });
       setScheduling(false);
@@ -232,7 +208,6 @@ export default function AdminTickets() {
     setScheduleDialogOpen(true);
   };
 
-
   const TicketList = ({ ticketList, actions }: { ticketList: Ticket[]; actions?: (ticket: Ticket) => React.ReactNode }) => (
     <div className="space-y-4">
       {ticketList.length === 0 ? (
@@ -242,13 +217,18 @@ export default function AdminTickets() {
           const symptoms = [ticket.symptom_1, ticket.symptom_2, ticket.symptom_3].filter(Boolean);
           const priority = priorityConfig[ticket.priority] || priorityConfig.normal;
           const status = statusConfig[ticket.status] || { label: ticket.status, className: 'bg-muted text-muted-foreground' };
+          const isEmergency = ticket.priority === 'emergency';
 
           return (
-            <Card key={ticket.id} className="shadow-sm">
+            <Card
+              key={ticket.id}
+              className={`shadow-sm ${isEmergency ? 'border-destructive/50 border-l-4 border-l-destructive bg-destructive/5' : ''}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {isEmergency && <Siren className="w-4 h-4 text-destructive" />}
                       <Badge variant="outline" className={priority.className}>{priority.label}</Badge>
                       <Badge variant="outline" className={status.className}>{status.label}</Badge>
                     </div>
@@ -290,6 +270,10 @@ export default function AdminTickets() {
     );
   }
 
+  // Selected vet workload info (for assignment dialog)
+  const selectedVetWorkload = vetWorkloads.find(v => v.user_id === selectedVetId);
+  const scheduleVetWorkload = vetWorkloads.find(v => v.user_id === scheduleVetId);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -316,7 +300,10 @@ export default function AdminTickets() {
 
           <TabsContent value="new" className="mt-6">
             <TicketList ticketList={createdTickets} actions={(ticket) => (
-              <Button size="sm" onClick={() => openAssignDialog(ticket)}>Assign Vet</Button>
+              <Button size="sm" variant={ticket.priority === 'emergency' ? 'destructive' : 'default'} onClick={() => openAssignDialog(ticket)}>
+                {ticket.priority === 'emergency' && <Siren className="w-3 h-3 mr-1" />}
+                Assign Vet
+              </Button>
             )} />
           </TabsContent>
           <TabsContent value="assigned" className="mt-6">
@@ -340,36 +327,108 @@ export default function AdminTickets() {
           </TabsContent>
         </Tabs>
 
-        {/* Assign Vet Dialog */}
+        {/* ───── Assign Vet Dialog ───── */}
         <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Assign Vet to Ticket</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Stethoscope className="w-5 h-5 text-primary" />
+                Assign Vet to Ticket
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4 pt-2">
               {selectedTicket && (
-                <div className="p-3 rounded-lg bg-secondary/50">
+                <div className={`p-3 rounded-lg ${selectedTicket.priority === 'emergency' ? 'bg-destructive/10 border border-destructive/30' : 'bg-secondary/50'}`}>
+                  {selectedTicket.priority === 'emergency' && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <Siren className="w-4 h-4 text-destructive" />
+                      <span className="text-xs font-bold text-destructive uppercase">Emergency Case</span>
+                    </div>
+                  )}
                   <p className="font-medium">{selectedTicket.animals?.breed || selectedTicket.animals?.species}</p>
                   <p className="text-sm text-muted-foreground">{selectedTicket.complaint}</p>
                 </div>
               )}
+
+              {/* Recommended Vet Assignment */}
               <div className="space-y-2">
-                <Label>Select Vet *</Label>
-                <Select value={selectedVetId} onValueChange={setSelectedVetId}>
-                  <SelectTrigger><SelectValue placeholder="Choose a veterinarian" /></SelectTrigger>
-                  <SelectContent>
-                    {vets.map((vet) => (
-                      <SelectItem key={vet.user_id} value={vet.user_id}>Dr. {vet.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <Label className="font-semibold">Recommended Vet Assignment</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">Sorted by current workload — lowest first</p>
+                {workloadsLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                    {vetWorkloads.map((vet) => {
+                      const isSelected = selectedVetId === vet.user_id;
+                      return (
+                        <button
+                          key={vet.user_id}
+                          type="button"
+                          onClick={() => setSelectedVetId(vet.user_id)}
+                          className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                            isSelected
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border hover:bg-accent/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <Stethoscope className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <span className="font-medium text-sm">Dr. {vet.full_name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">{vet.case_count} active cases</span>
+                              <Badge variant="outline" className={`text-xs ${vet.levelClass}`}>
+                                {vet.levelLabel}
+                              </Badge>
+                            </div>
+                          </div>
+                          {/* Mini progress bar */}
+                          <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary/60 transition-all"
+                              style={{ width: `${Math.min((vet.case_count / Math.max(...vetWorkloads.map(v => v.case_count), 1)) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* Selected vet indicator */}
+              {selectedVetWorkload && (
+                <div className={`flex items-center gap-2 p-2 rounded-md text-sm ${selectedVetWorkload.levelClass}`}>
+                  <Stethoscope className="w-4 h-4 shrink-0" />
+                  <span>
+                    <strong>Dr. {selectedVetWorkload.full_name}</strong> — {selectedVetWorkload.case_count} active cases · {selectedVetWorkload.levelLabel}
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Admin Notes (Optional)</Label>
-                <Textarea placeholder="Add any notes for the vet..." value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)} rows={2} />
+                <Textarea
+                  placeholder="Add any notes for the vet..."
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  rows={2}
+                />
               </div>
-              <Button onClick={handleAssignTicket} className="w-full" disabled={assigning || !selectedVetId}>
+              <Button
+                onClick={handleAssignTicket}
+                className="w-full"
+                disabled={assigning || !selectedVetId}
+                variant={selectedTicket?.priority === 'emergency' ? 'destructive' : 'default'}
+              >
                 {assigning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Assign & Send to Waiting
               </Button>
@@ -377,7 +436,7 @@ export default function AdminTickets() {
           </DialogContent>
         </Dialog>
 
-        {/* Schedule Date Dialog */}
+        {/* ───── Schedule Date Dialog ───── */}
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -388,9 +447,17 @@ export default function AdminTickets() {
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <p className="font-medium">{scheduleTicket.animals?.breed || scheduleTicket.animals?.species}</p>
                   <p className="text-sm text-muted-foreground">{scheduleTicket.complaint}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Assigned Vet: {vets.find(v => v.user_id === scheduleTicket.assigned_vet_id)?.full_name || 'Unknown'}
-                  </p>
+                  {scheduleVetWorkload && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Stethoscope className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Dr. {scheduleVetWorkload.full_name} · {scheduleVetWorkload.case_count} cases
+                      </span>
+                      <Badge variant="outline" className={`text-xs ${scheduleVetWorkload.levelClass}`}>
+                        {scheduleVetWorkload.levelLabel}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               )}
 

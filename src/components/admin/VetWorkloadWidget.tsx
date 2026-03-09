@@ -1,66 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Stethoscope, BarChart3 } from 'lucide-react';
-
-interface VetWorkload {
-  vet_id: string;
-  full_name: string;
-  case_count: number;
-}
-
-function getWorkloadLevel(count: number) {
-  if (count >= 13) return { label: 'High', className: 'bg-destructive/20 text-destructive' };
-  if (count >= 6) return { label: 'Medium', className: 'bg-warning/20 text-warning-foreground' };
-  return { label: 'Low', className: 'bg-success/20 text-success-foreground' };
-}
+import { useVetWorkloads } from '@/hooks/useVetWorkloads';
 
 export function VetWorkloadWidget() {
-  const [workloads, setWorkloads] = useState<VetWorkload[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchWorkloads();
-  }, []);
-
-  const fetchWorkloads = async () => {
-    const [ticketsRes, profilesRes] = await Promise.all([
-      supabase
-        .from('tickets')
-        .select('assigned_vet_id')
-        .eq('is_active', true)
-        .not('status', 'in', '("completed","cancelled")'),
-      supabase.from('profiles').select('user_id, full_name').eq('role', 'vet'),
-    ]);
-
-    const tickets = ticketsRes.data ?? [];
-    const profiles = profilesRes.data ?? [];
-    const nameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.full_name]));
-
-    const countMap: Record<string, number> = {};
-    for (const t of tickets) {
-      if (t.assigned_vet_id) {
-        countMap[t.assigned_vet_id] = (countMap[t.assigned_vet_id] || 0) + 1;
-      }
-    }
-
-    // Include vets with 0 cases too
-    for (const p of profiles) {
-      if (!countMap[p.user_id]) countMap[p.user_id] = 0;
-    }
-
-    const sorted = Object.entries(countMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([id, count]) => ({
-        vet_id: id,
-        full_name: nameMap[id] || 'Unknown',
-        case_count: count,
-      }));
-
-    setWorkloads(sorted);
-    setLoading(false);
-  };
+  const { vets: workloads, loading } = useVetWorkloads();
 
   const totalCases = workloads.reduce((s, w) => s + w.case_count, 0);
   const vetsWithCases = workloads.filter(w => w.case_count > 0).length;
@@ -74,7 +18,7 @@ export function VetWorkloadWidget() {
           Vet Workload
         </CardTitle>
         <div className="flex gap-3 text-sm text-muted-foreground">
-          <span>Total: <strong className="text-foreground">{totalCases}</strong></span>
+          <span>Total Active: <strong className="text-foreground">{totalCases}</strong></span>
           <span>Avg: <strong className="text-foreground">{avgCases}</strong>/vet</span>
         </div>
       </CardHeader>
@@ -88,11 +32,10 @@ export function VetWorkloadWidget() {
         ) : (
           <div className="space-y-3">
             {workloads.map((vet) => {
-              const level = getWorkloadLevel(vet.case_count);
               const maxCount = Math.max(...workloads.map(w => w.case_count), 1);
               const barWidth = (vet.case_count / maxCount) * 100;
               return (
-                <div key={vet.vet_id} className="flex items-center gap-3">
+                <div key={vet.user_id} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Stethoscope className="w-4 h-4 text-primary" />
                   </div>
@@ -100,9 +43,9 @@ export function VetWorkloadWidget() {
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-medium text-sm truncate">Dr. {vet.full_name}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{vet.case_count}</span>
-                        <Badge variant="outline" className={level.className}>
-                          {level.label}
+                        <span className="text-sm font-semibold">{vet.case_count} cases</span>
+                        <Badge variant="outline" className={vet.levelClass}>
+                          {vet.levelLabel}
                         </Badge>
                       </div>
                     </div>

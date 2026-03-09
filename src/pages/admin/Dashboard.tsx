@@ -21,7 +21,9 @@ import {
   Loader2,
   Calendar,
   PawPrint,
-  BarChart3
+  BarChart3,
+  Siren,
+  Clock
 } from 'lucide-react';
 
 interface VetSummary {
@@ -30,6 +32,15 @@ interface VetSummary {
   total_slots: number;
   booked_slots: number;
   available_slots: number;
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export default function AdminDashboard() {
@@ -48,7 +59,8 @@ export default function AdminDashboard() {
     loading: ticketsLoading, 
     createdTickets,
     assignedTickets,
-    inProgressTickets
+    inProgressTickets,
+    emergencyTickets
   } = useTickets();
 
   useEffect(() => {
@@ -121,7 +133,45 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground mt-1">System overview and management</p>
         </div>
 
-        {/* Urgent Alert */}
+        {/* 🚨 Emergency Alert Banner */}
+        {emergencyTickets.length > 0 && (
+          <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center shrink-0 animate-pulse">
+                <Siren className="w-5 h-5 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-bold text-destructive text-lg">🚨 Emergency Case Alert</p>
+                  <Badge className="bg-destructive text-destructive-foreground font-bold">
+                    {emergencyTickets.length} {emergencyTickets.length === 1 ? 'case' : 'cases'}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  {emergencyTickets.slice(0, 3).map(t => {
+                    const symptoms = [t.symptom_1, t.symptom_2, t.symptom_3].filter(Boolean).join(', ');
+                    return (
+                      <p key={t.id} className="text-sm text-destructive/80">
+                        <span className="font-medium">{t.animals?.breed || t.animals?.species || 'Animal'}</span>
+                        {' · '}Farmer: {t.farmer_name}
+                        {symptoms && <> · <span className="italic">{symptoms}</span></>}
+                        {' · '}<span className="text-xs opacity-70">{timeAgo(t.created_at)}</span>
+                      </p>
+                    );
+                  })}
+                  {emergencyTickets.length > 3 && (
+                    <p className="text-xs text-destructive/60">+{emergencyTickets.length - 3} more emergency cases</p>
+                  )}
+                </div>
+              </div>
+              <Link to="/admin/tickets" className="ml-auto shrink-0">
+                <Button size="sm" variant="destructive">Handle Now</Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Unassigned Ticket Alert */}
         {createdTickets.length > 0 && (
           <Card className="border-warning/50 bg-warning/5">
             <CardContent className="p-4">
@@ -163,12 +213,22 @@ export default function AdminDashboard() {
               <ClipboardList className="w-4 h-4" />
               Overview
             </TabsTrigger>
+            <TabsTrigger value="emergency" className="flex gap-2 relative">
+              <Siren className="w-4 h-4" />
+              Emergency
+              {emergencyTickets.length > 0 && (
+                <span className="ml-1 bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5 font-bold leading-none">
+                  {emergencyTickets.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="reports" className="flex gap-2">
               <BarChart3 className="w-4 h-4" />
               Reports & Analytics
             </TabsTrigger>
           </TabsList>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="mt-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Unassigned Tickets */}
@@ -262,6 +322,78 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
+          {/* Emergency Tab */}
+          <TabsContent value="emergency" className="mt-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Siren className="w-5 h-5 text-destructive" />
+                  <h2 className="text-xl font-bold text-destructive">Emergency Cases</h2>
+                </div>
+                <Badge className="bg-destructive text-destructive-foreground">
+                  {emergencyTickets.length} Active
+                </Badge>
+              </div>
+
+              {emergencyTickets.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Siren className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="text-muted-foreground font-medium">No Emergency Cases</p>
+                    <p className="text-sm text-muted-foreground mt-1">All clear — no active emergency tickets.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {emergencyTickets.map((ticket) => {
+                    const symptoms = [ticket.symptom_1, ticket.symptom_2, ticket.symptom_3].filter(Boolean);
+                    return (
+                      <Card key={ticket.id} className="border-destructive/50 bg-destructive/5 border-l-4 border-l-destructive">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center shrink-0 mt-0.5">
+                                <Siren className="w-5 h-5 text-destructive" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <Badge className="bg-destructive text-destructive-foreground text-xs font-bold">🚨 EMERGENCY</Badge>
+                                  <Badge variant="outline" className="text-xs capitalize">{ticket.status.replace(/_/g, ' ')}</Badge>
+                                </div>
+                                <p className="font-semibold">
+                                  {ticket.animals?.breed || ticket.animals?.species || 'Unknown Animal'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">Farmer: {ticket.farmer_name}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{ticket.complaint}</p>
+                                {symptoms.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {symptoms.map((s, i) => (
+                                      <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1 mt-2">
+                                  <Clock className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{timeAgo(ticket.created_at)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <Link to="/admin/tickets" className="shrink-0">
+                              <Button size="sm" variant="destructive">
+                                Assign Vet
+                              </Button>
+                            </Link>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Reports Tab */}
           <TabsContent value="reports" className="mt-6">
             <AdminReports />
           </TabsContent>
