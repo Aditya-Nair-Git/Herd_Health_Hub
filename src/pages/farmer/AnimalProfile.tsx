@@ -520,6 +520,12 @@ export default function AnimalProfile() {
                         </div>
                         <AppointmentTimer appointmentDate={schedule.appointment_date} status={schedule.status} />
                       </div>
+                      {schedule.vet_profile && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Stethoscope className="w-3 h-3 text-primary" />
+                          <span className="font-medium">Dr. {schedule.vet_profile.full_name}</span>
+                        </div>
+                      )}
                       {schedule.vaccine_name && (
                         <p className="text-sm text-muted-foreground">{schedule.vaccine_name}</p>
                       )}
