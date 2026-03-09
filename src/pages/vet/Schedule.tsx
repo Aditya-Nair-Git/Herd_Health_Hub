@@ -3,26 +3,17 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { 
   Calendar, Loader2, ChevronLeft, ChevronRight, 
-  User, Trash2, Plus, CalendarCheck, CalendarX
+  User
 } from 'lucide-react';
 
 export default function VetSchedule() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [markFreeOpen, setMarkFreeOpen] = useState(false);
-  const [freeDate, setFreeDate] = useState('');
-  const [markingFree, setMarkingFree] = useState(false);
 
   const currentDate = new Date(selectedDate);
   const startOfWeek = new Date(currentDate);
@@ -32,17 +23,15 @@ export default function VetSchedule() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { slots: allSlots, loading, refetch } = useVetSlots({
+  const { slots: allSlots, loading } = useVetSlots({
     vetId: user?.id,
     dateFrom: startOfWeek.toISOString().split('T')[0],
     dateTo: endOfWeek.toISOString().split('T')[0],
   });
 
-  // Filter: only show upcoming dates. Hide slots linked to cancelled/completed tickets.
   const slots = allSlots.filter(slot => {
     if (slot.slot_date < today) return false;
     if (slot.status === 'booked' && slot.tickets) {
-      // If the linked ticket is cancelled or completed, hide this slot
       const ticketStatus = (slot.tickets as any)?.status;
       if (ticketStatus === 'cancelled' || ticketStatus === 'completed') return false;
     }
@@ -50,73 +39,18 @@ export default function VetSchedule() {
     return false;
   });
 
-  const handleMarkDateFree = async () => {
-    if (!freeDate) {
-      toast({ title: 'Error', description: 'Please select a date', variant: 'destructive' });
-      return;
-    }
-    if (freeDate < today) {
-      toast({ title: 'Error', description: 'Cannot mark past dates as free', variant: 'destructive' });
-      return;
-    }
-
-    // Check if date already has an available slot
-    const existing = allSlots.find(s => s.slot_date === freeDate && s.status === 'available');
-    if (existing) {
-      toast({ title: 'Already Free', description: 'This date is already marked as available.' });
-      setMarkFreeOpen(false);
-      return;
-    }
-
-    setMarkingFree(true);
-    const { error } = await supabase.from('vet_slots').insert({
-      vet_id: user?.id || '',
-      slot_date: freeDate,
-      start_time: '09:00',
-      end_time: '17:00',
-      status: 'available',
-      notes: null,
-    });
-
-    if (error) {
-      if (error.code === '23505') {
-        toast({ title: 'Error', description: 'This date already has an entry.', variant: 'destructive' });
-      } else {
-        toast({ title: 'Error', description: 'Failed to mark date as free', variant: 'destructive' });
-      }
-    } else {
-      toast({ title: 'Date Marked Free', description: `${new Date(freeDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} is now available.` });
-      setMarkFreeOpen(false);
-      setFreeDate('');
-      refetch();
-    }
-    setMarkingFree(false);
-  };
-
-  const handleDeleteSlot = async (slotId: string) => {
-    const { error } = await supabase.from('vet_slots').delete().eq('id', slotId);
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to remove date', variant: 'destructive' });
-    } else {
-      toast({ title: 'Date Removed' });
-      refetch();
-    }
-  };
-
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     setSelectedDate(newDate.toISOString().split('T')[0]);
   };
 
-  // Group slots by date
   const slotsByDate: Record<string, VetSlot[]> = {};
   slots.forEach(slot => {
     if (!slotsByDate[slot.slot_date]) slotsByDate[slot.slot_date] = [];
     slotsByDate[slot.slot_date].push(slot);
   });
 
-  // Generate week days
   const weekDays = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date(startOfWeek);
@@ -135,18 +69,11 @@ export default function VetSchedule() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold">My Schedule</h1>
-            <p className="text-muted-foreground mt-1">Manage your availability and appointments</p>
-          </div>
-          <Button onClick={() => { setFreeDate(''); setMarkFreeOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Mark Date as Free
-          </Button>
+        <div>
+          <h1 className="text-3xl font-heading font-bold">My Appointments</h1>
+          <p className="text-muted-foreground mt-1">View your assigned appointments</p>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-4">
           <Card className="shadow-sm">
             <CardContent className="p-4 text-center">
@@ -168,7 +95,6 @@ export default function VetSchedule() {
           </Card>
         </div>
 
-        {/* Week Navigation */}
         <Card className="shadow-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -230,12 +156,6 @@ export default function VetSchedule() {
                                 <p className="text-[10px] text-muted-foreground truncate">{slot.tickets.complaint}</p>
                               </div>
                             )}
-                            {slot.status === 'available' && !isPast && (
-                              <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px] text-destructive w-full mt-1"
-                                onClick={() => handleDeleteSlot(slot.id)}>
-                                <Trash2 className="w-3 h-3 mr-0.5" /> Remove
-                              </Button>
-                            )}
                           </div>
                         )) : (
                           <p className="text-[10px] text-muted-foreground text-center py-4">
@@ -251,30 +171,6 @@ export default function VetSchedule() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Mark Date as Free Dialog */}
-      <Dialog open={markFreeOpen} onOpenChange={setMarkFreeOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mark Date as Free</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Select Date *</Label>
-              <Input
-                type="date"
-                value={freeDate}
-                min={today}
-                onChange={(e) => setFreeDate(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleMarkDateFree} className="w-full" disabled={markingFree || !freeDate}>
-              {markingFree && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Mark as Available
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }

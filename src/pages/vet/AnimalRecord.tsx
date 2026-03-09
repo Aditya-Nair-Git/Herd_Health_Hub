@@ -299,12 +299,6 @@ export default function VetAnimalRecord() {
               vetId={user?.id || ''}
               onVaccinationSaved={refetchVaccinations}
             />
-            <ScheduleDialog
-              animalId={animal.animal_id}
-              farmerId={animal.farmer_id}
-              vetId={user?.id || ''}
-              onScheduleCreated={refetchSchedules}
-            />
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>

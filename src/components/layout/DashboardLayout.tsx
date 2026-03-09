@@ -46,7 +46,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: '/vet', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/vet/records', label: 'Animal Records', icon: FileText },
     { href: '/vet/cases', label: 'My Cases', icon: ClipboardList },
-    { href: '/vet/schedule', label: 'My Schedule', icon: Calendar },
+    { href: '/vet/schedule', label: 'My Appointments', icon: Calendar },
   ];
 
   const adminLinks = [

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SymptomSelect } from '@/components/ui/symptom-select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -21,9 +20,6 @@ const animalSchema = z.object({
   age: z.number().min(0).optional(),
   milk_production_status: z.enum(['Producing', 'Not Producing', 'Dry', 'N/A']).optional(),
   previous_disease_history: z.string().optional(),
-  symptom_1: z.string().optional(),
-  symptom_2: z.string().optional(),
-  symptom_3: z.string().optional(),
 });
 
 export default function RegisterAnimal() {
@@ -40,22 +36,7 @@ export default function RegisterAnimal() {
     age: '',
     milk_production_status: '' as 'Producing' | 'Not Producing' | 'Dry' | 'N/A' | '',
     previous_disease_history: '',
-    symptom_1: '',
-    symptom_2: '',
-    symptom_3: '',
   });
-
-  const handleSymptomChange = (symptomNumber: 1 | 2 | 3, value: string) => {
-    const newValue = value === 'none' ? '' : value;
-    setFormData(prev => ({
-      ...prev,
-      [`symptom_${symptomNumber}`]: newValue
-    }));
-  };
-
-  const getSelectedSymptoms = () => {
-    return [formData.symptom_1, formData.symptom_2, formData.symptom_3].filter(Boolean);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,9 +47,6 @@ export default function RegisterAnimal() {
       age: formData.age ? parseInt(formData.age) : undefined,
       sex: formData.sex || undefined,
       milk_production_status: formData.milk_production_status || undefined,
-      symptom_1: formData.symptom_1 || undefined,
-      symptom_2: formData.symptom_2 || undefined,
-      symptom_3: formData.symptom_3 || undefined,
     };
 
     const result = animalSchema.safeParse(dataToValidate);
@@ -83,7 +61,6 @@ export default function RegisterAnimal() {
 
     setLoading(true);
 
-    // Insert into animals table
     const { data: animalData, error: animalError } = await supabase
       .from('animals')
       .insert({
@@ -93,9 +70,6 @@ export default function RegisterAnimal() {
         age: formData.age ? parseInt(formData.age) : null,
         milk_production_status: formData.milk_production_status || null,
         previous_disease_history: formData.previous_disease_history || null,
-        symptom_1: formData.symptom_1 || null,
-        symptom_2: formData.symptom_2 || null,
-        symptom_3: formData.symptom_3 || null,
         farmer_id: user?.id,
         farmer_name: profile?.full_name || '',
       })
@@ -112,7 +86,6 @@ export default function RegisterAnimal() {
       return;
     }
 
-    // Insert into farmer_entries table
     await supabase.from('farmer_entries').insert({
       animal_id: animalData.animal_id,
       species: formData.species,
@@ -120,9 +93,6 @@ export default function RegisterAnimal() {
       age: formData.age ? parseInt(formData.age) : null,
       milk_production_status: formData.milk_production_status || null,
       previous_disease_history: formData.previous_disease_history || null,
-      symptom_1: formData.symptom_1 || null,
-      symptom_2: formData.symptom_2 || null,
-      symptom_3: formData.symptom_3 || null,
       farmer_id: user?.id,
     });
 
@@ -134,8 +104,6 @@ export default function RegisterAnimal() {
     navigate('/farmer/animals');
     setLoading(false);
   };
-
-  const selectedSymptoms = getSelectedSymptoms();
 
   return (
     <DashboardLayout>
@@ -152,7 +120,6 @@ export default function RegisterAnimal() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Info */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="species">Species *</Label>
@@ -213,7 +180,6 @@ export default function RegisterAnimal() {
                 </div>
               </div>
 
-              {/* Production Status */}
               <div className="space-y-2">
                 <Label htmlFor="milk_production">Milk Production Status</Label>
                 <Select 
@@ -234,7 +200,6 @@ export default function RegisterAnimal() {
                 </Select>
               </div>
 
-              {/* Disease History */}
               <div className="space-y-2">
                 <Label htmlFor="disease_history">Previous Disease History</Label>
                 <Textarea
@@ -244,38 +209,6 @@ export default function RegisterAnimal() {
                   onChange={(e) => setFormData({ ...formData, previous_disease_history: e.target.value })}
                   rows={3}
                 />
-              </div>
-
-              {/* Symptoms - Optional with Dropdown */}
-              <div className="space-y-4">
-                <div>
-                  <Label>Current Symptoms (Optional)</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Select up to 3 symptoms if your animal is showing any signs of illness
-                  </p>
-                </div>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <SymptomSelect
-                    value={formData.symptom_1}
-                    onValueChange={(value) => handleSymptomChange(1, value)}
-                    excludeSymptoms={[formData.symptom_2, formData.symptom_3].filter(Boolean)}
-                    placeholder="Symptom 1"
-                  />
-                  <SymptomSelect
-                    value={formData.symptom_2}
-                    onValueChange={(value) => handleSymptomChange(2, value)}
-                    excludeSymptoms={[formData.symptom_1, formData.symptom_3].filter(Boolean)}
-                    placeholder="Symptom 2"
-                    disabled={selectedSymptoms.length === 0 && !formData.symptom_1}
-                  />
-                  <SymptomSelect
-                    value={formData.symptom_3}
-                    onValueChange={(value) => handleSymptomChange(3, value)}
-                    excludeSymptoms={[formData.symptom_1, formData.symptom_2].filter(Boolean)}
-                    placeholder="Symptom 3"
-                    disabled={selectedSymptoms.length < 1}
-                  />
-                </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
