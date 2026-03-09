@@ -12,6 +12,7 @@ import { AppointmentTimer } from '@/components/ui/appointment-timer';
 import { AnimalStatusBadge } from '@/components/ui/animal-status-badge';
 import { CreateTicketDialog } from '@/components/tickets/CreateTicketDialog';
 import { TicketCard } from '@/components/tickets/TicketCard';
+import { TicketMessages } from '@/components/tickets/TicketMessages';
 import { TreatmentTimeline } from '@/components/treatment/TreatmentTimeline';
 import { VaccinationTimeline } from '@/components/vaccination/VaccinationTimeline';
 import { MedicationCard } from '@/components/medication/MedicationCard';
