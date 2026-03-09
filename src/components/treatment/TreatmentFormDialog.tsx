@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { useDiseases } from '@/hooks/useDiseases';
+import { useDiseasePrediction } from '@/hooks/useDiseasePrediction';
 
 interface TreatmentFormDialogProps {
   ticketId?: string;
