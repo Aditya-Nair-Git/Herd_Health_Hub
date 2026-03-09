@@ -25,6 +25,7 @@ const ALLOWED_QUERY_TYPES = [
   "vet_workload",
   "scheduling_log",
   "custom_select",
+  "prediction_accuracy",
 ] as const;
 
 type QueryType = (typeof ALLOWED_QUERY_TYPES)[number];
