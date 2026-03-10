@@ -92,6 +92,7 @@ export default function AnimalProfile() {
     symptom_1: '',
     symptom_2: '',
     symptom_3: '',
+    description: '',
   });
 
   const isDeceased = animal?.animal_status === 'deceased';
