@@ -699,20 +699,32 @@ export default function VetAnimalRecord() {
                 <CardContent>
                   <div className="space-y-3">
                     {farmerEntries.slice(0, 5).map((entry) => (
-                      <div key={entry.id} className="p-3 rounded-lg border bg-card">
-                        <p className="font-medium text-sm mb-2">
-                          {new Date(entry.entry_date).toLocaleDateString()}
-                        </p>
+                      <div key={entry.id} className="p-3 rounded-lg border bg-card space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm">
+                            {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', {
+                              day: 'numeric', month: 'long', year: 'numeric'
+                            })}
+                          </p>
+                          <Badge variant="secondary" className="text-xs">Farmer Report</Badge>
+                        </div>
                         {(entry.symptom_1 || entry.symptom_2 || entry.symptom_3) && (
-                          <div className="flex flex-wrap gap-1">
-                            {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
-                            ))}
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Symptoms:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        {entry.notes && (
-                          <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
+                        {entry.notes && entry.notes !== 'Symptom update' && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Description:</p>
+                            <p className="text-sm">{entry.notes}</p>
+                          </div>
                         )}
+                        <p className="text-xs text-muted-foreground">Reported by: Farmer</p>
                       </div>
                     ))}
                   </div>
