@@ -620,7 +620,7 @@ export default function VetAnimalRecord() {
             <TreatmentTimeline records={treatmentRecords} />
 
             {/* Vaccination History */}
-            <VaccinationTimeline records={vaccinationRecords} />
+            <VaccinationTimeline records={vaccinationRecords} allowEdit={true} onRecordUpdated={refetchVaccinations} />
 
             {/* Active Medications */}
             {activeMeds.length > 0 && (
