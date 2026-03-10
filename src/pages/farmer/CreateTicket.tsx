@@ -31,6 +31,7 @@ export default function CreateTicketPage() {
   const [activeTicketWarning, setActiveTicketWarning] = useState(false);
   const [formData, setFormData] = useState({
     complaint: '',
+    description: '',
     symptom_1: '',
     symptom_2: '',
     symptom_3: '',
