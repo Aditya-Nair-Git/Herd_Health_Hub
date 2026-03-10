@@ -123,6 +123,7 @@ export default function AnimalProfile() {
         symptom_1: animalResult.data.symptom_1 || '',
         symptom_2: animalResult.data.symptom_2 || '',
         symptom_3: animalResult.data.symptom_3 || '',
+        description: '',
       });
     }
     if (!vetResult.error && vetResult.data) {
