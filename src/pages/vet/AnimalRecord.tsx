@@ -523,7 +523,7 @@ export default function VetAnimalRecord() {
               </CardContent>
             </Card>
 
-            {/* Current Status */}
+            {/* Current Health Status */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -532,44 +532,87 @@ export default function VetAnimalRecord() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {animal.body_temperature && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                      <Thermometer className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Temperature</p>
-                        <p className="font-medium">{animal.body_temperature}°F</p>
-                      </div>
-                    </div>
-                  )}
-                  {animal.disease_diagnosis && (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                      <p className="text-sm text-muted-foreground">Current Diagnosis</p>
-                      <p className="font-medium text-destructive">{animal.disease_diagnosis}</p>
-                    </div>
-                  )}
-                </div>
+                {/* Latest farmer-reported symptoms */}
+                {(() => {
+                  const latestFarmerEntry = farmerEntries[0];
+                  const symptoms = [animal.symptom_1, animal.symptom_2, animal.symptom_3].filter(Boolean);
+                  const latestTicket = activeTickets[0];
 
-                {animal.prescribed_medication && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5">
-                    <Pill className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Current Medication</p>
-                      <p className="font-medium">{animal.prescribed_medication}</p>
-                    </div>
-                  </div>
-                )}
+                  return (
+                    <>
+                      {/* Reported Symptoms */}
+                      {(symptoms.length > 0 || latestFarmerEntry) && (
+                        <div className="p-3 rounded-lg bg-secondary/50 space-y-2">
+                          <p className="text-sm font-semibold">Symptoms Reported</p>
+                          {symptoms.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {symptoms.map((s, i) => (
+                                <Badge key={i} variant="outline">{s}</Badge>
+                              ))}
+                            </div>
+                          )}
+                          {latestFarmerEntry?.notes && latestFarmerEntry.notes !== 'Symptom update' && (
+                            <p className="text-sm text-muted-foreground italic">"{latestFarmerEntry.notes}"</p>
+                          )}
+                          {latestFarmerEntry && (
+                            <p className="text-xs text-muted-foreground">
+                              Reported by: Farmer • {new Date(latestFarmerEntry.entry_date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                {(animal.symptom_1 || animal.symptom_2 || animal.symptom_3) && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Reported Symptoms</p>
-                    <div className="flex flex-wrap gap-2">
-                      {[animal.symptom_1, animal.symptom_2, animal.symptom_3].filter(Boolean).map((s, i) => (
-                        <Badge key={i} variant="outline">{s}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      {/* Latest vet observations */}
+                      {vetEntries[0] && (
+                        <div className="p-3 rounded-lg bg-primary/5 space-y-2">
+                          <p className="text-sm font-semibold">Latest Vet Observations</p>
+                          {vetEntries[0].body_temperature && (
+                            <div className="flex items-center gap-2">
+                              <Thermometer className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">Temperature: {vetEntries[0].body_temperature}°F</span>
+                            </div>
+                          )}
+                          {vetEntries[0].vet_diagnosis && (
+                            <p className="text-sm"><span className="text-muted-foreground">Diagnosis:</span> {vetEntries[0].vet_diagnosis}</p>
+                          )}
+                          {(vetEntries[0].symptom_1 || vetEntries[0].symptom_2 || vetEntries[0].symptom_3) && (
+                            <div className="flex flex-wrap gap-1">
+                              {[vetEntries[0].symptom_1, vetEntries[0].symptom_2, vetEntries[0].symptom_3].filter(Boolean).map((s, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Observed by: Vet • {new Date(vetEntries[0].visit_date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Ticket status */}
+                      {latestTicket && (
+                        <div className="p-3 rounded-lg border space-y-1">
+                          <p className="text-sm font-semibold">Ticket Status</p>
+                          <Badge variant="outline" className="capitalize">{latestTicket.status.replace(/_/g, ' ')}</Badge>
+                          <p className="text-sm text-muted-foreground">{latestTicket.complaint}</p>
+                        </div>
+                      )}
+
+                      {animal.prescribed_medication && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5">
+                          <Pill className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Current Medication</p>
+                            <p className="font-medium">{animal.prescribed_medication}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {!symptoms.length && !latestFarmerEntry && !vetEntries[0] && !latestTicket && (
+                        <p className="text-sm text-muted-foreground">No health data recorded yet</p>
+                      )}
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -577,7 +620,7 @@ export default function VetAnimalRecord() {
             <TreatmentTimeline records={treatmentRecords} />
 
             {/* Vaccination History */}
-            <VaccinationTimeline records={vaccinationRecords} />
+            <VaccinationTimeline records={vaccinationRecords} allowEdit={true} onRecordUpdated={refetchVaccinations} />
 
             {/* Active Medications */}
             {activeMeds.length > 0 && (
@@ -656,20 +699,32 @@ export default function VetAnimalRecord() {
                 <CardContent>
                   <div className="space-y-3">
                     {farmerEntries.slice(0, 5).map((entry) => (
-                      <div key={entry.id} className="p-3 rounded-lg border bg-card">
-                        <p className="font-medium text-sm mb-2">
-                          {new Date(entry.entry_date).toLocaleDateString()}
-                        </p>
+                      <div key={entry.id} className="p-3 rounded-lg border bg-card space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm">
+                            {new Date(entry.entry_date + 'T00:00:00').toLocaleDateString('en-US', {
+                              day: 'numeric', month: 'long', year: 'numeric'
+                            })}
+                          </p>
+                          <Badge variant="secondary" className="text-xs">Farmer Report</Badge>
+                        </div>
                         {(entry.symptom_1 || entry.symptom_2 || entry.symptom_3) && (
-                          <div className="flex flex-wrap gap-1">
-                            {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
-                            ))}
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Symptoms:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {[entry.symptom_1, entry.symptom_2, entry.symptom_3].filter(Boolean).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        {entry.notes && (
-                          <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
+                        {entry.notes && entry.notes !== 'Symptom update' && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Description:</p>
+                            <p className="text-sm">{entry.notes}</p>
+                          </div>
                         )}
+                        <p className="text-xs text-muted-foreground">Reported by: Farmer</p>
                       </div>
                     ))}
                   </div>

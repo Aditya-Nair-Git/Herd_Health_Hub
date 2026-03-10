@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { SymptomSelect } from '@/components/ui/symptom-select';
@@ -92,6 +93,7 @@ export default function AnimalProfile() {
     symptom_1: '',
     symptom_2: '',
     symptom_3: '',
+    description: '',
   });
 
   const isDeceased = animal?.animal_status === 'deceased';
@@ -122,6 +124,7 @@ export default function AnimalProfile() {
         symptom_1: animalResult.data.symptom_1 || '',
         symptom_2: animalResult.data.symptom_2 || '',
         symptom_3: animalResult.data.symptom_3 || '',
+        description: '',
       });
     }
     if (!vetResult.error && vetResult.data) {
@@ -170,7 +173,7 @@ export default function AnimalProfile() {
       symptom_1: editSymptoms.symptom_1 || null,
       symptom_2: editSymptoms.symptom_2 || null,
       symptom_3: editSymptoms.symptom_3 || null,
-      notes: 'Symptom update',
+      notes: editSymptoms.description || 'Symptom update',
     });
 
     toast({
@@ -367,16 +370,16 @@ export default function AnimalProfile() {
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Edit className="w-4 h-4 mr-2" />
-                      Update Symptoms
+                      Report Health Issue
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Update Symptoms</DialogTitle>
+                      <DialogTitle>Report Health Issue</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <p className="text-sm text-muted-foreground">
-                        Select up to 3 symptoms your animal is currently showing
+                        Report symptoms and describe the health issue your animal is experiencing
                       </p>
                       <div className="space-y-3">
                         <div className="space-y-2">
@@ -404,9 +407,18 @@ export default function AnimalProfile() {
                           />
                         </div>
                       </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          placeholder="Describe the issue in detail, e.g., when it started, any changes in behavior..."
+                          value={editSymptoms.description}
+                          onChange={(e) => setEditSymptoms(prev => ({ ...prev, description: e.target.value }))}
+                          rows={3}
+                        />
+                      </div>
                       <Button onClick={handleSaveSymptoms} className="w-full" disabled={savingSymptoms}>
                         {savingSymptoms ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Save Symptoms
+                        Submit Report
                       </Button>
                     </div>
                   </DialogContent>
@@ -544,21 +556,51 @@ export default function AnimalProfile() {
                 <CardTitle className="text-lg">Vaccination</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
-                  {animal.vaccination_status === 'Up to date' ? (
-                    <CheckCircle className="w-8 h-8 text-success" />
-                  ) : (
+                {vaccinationRecords.length > 0 ? (() => {
+                  const latestCompleted = vaccinationRecords.find(r => r.vaccination_status === 'completed');
+                  const latestScheduled = vaccinationRecords.find(r => r.vaccination_status === 'scheduled');
+                  const latestRecord = latestCompleted || vaccinationRecords[0];
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        {latestRecord.vaccination_status === 'completed' ? (
+                          <CheckCircle className="w-8 h-8 text-success" />
+                        ) : (
+                          <AlertTriangle className="w-8 h-8 text-warning" />
+                        )}
+                        <div>
+                          <p className="font-medium capitalize">{latestRecord.vaccination_status}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {latestRecord.vaccine_name}
+                          </p>
+                          {latestRecord.administered_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Date: {new Date(latestRecord.administered_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {latestScheduled && latestScheduled !== latestRecord && (
+                        <div className="mt-2 p-2 rounded bg-warning/10 text-sm">
+                          <p className="font-medium text-warning-foreground">Upcoming: {latestScheduled.vaccine_name}</p>
+                          {latestScheduled.next_due_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Due: {new Date(latestScheduled.next_due_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })() : (
+                  <div className="flex items-center gap-3">
                     <AlertTriangle className="w-8 h-8 text-warning" />
-                  )}
-                  <div>
-                    <p className="font-medium">{animal.vaccination_status || 'Not recorded'}</p>
-                    {animal.last_vaccination_date && (
-                      <p className="text-sm text-muted-foreground">
-                        Last: {new Date(animal.last_vaccination_date).toLocaleDateString()}
-                      </p>
-                    )}
+                    <div>
+                      <p className="font-medium">Not recorded</p>
+                      <p className="text-sm text-muted-foreground">No vaccination records found</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 

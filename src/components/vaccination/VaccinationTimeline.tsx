@@ -1,12 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AppointmentTimer } from '@/components/ui/appointment-timer';
-import { Syringe, Calendar, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { EditVaccinationDialog } from '@/components/vaccination/EditVaccinationDialog';
+import { Syringe, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import type { VaccinationRecord } from '@/hooks/useVaccinationHistory';
 
 interface VaccinationTimelineProps {
   records: VaccinationRecord[];
   title?: string;
+  allowEdit?: boolean;
+  onRecordUpdated?: () => void;
 }
 
 const statusConfig = {
@@ -15,7 +18,7 @@ const statusConfig = {
   missed: { label: 'Missed', className: 'bg-destructive/20 text-destructive', icon: XCircle },
 };
 
-export function VaccinationTimeline({ records, title = "Vaccination History" }: VaccinationTimelineProps) {
+export function VaccinationTimeline({ records, title = "Vaccination History", allowEdit = false, onRecordUpdated }: VaccinationTimelineProps) {
   if (records.length === 0) {
     return (
       <Card className="shadow-card">
@@ -58,10 +61,15 @@ export function VaccinationTimeline({ records, title = "Vaccination History" }: 
                   <div className="p-4 rounded-lg border bg-card">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium">{record.vaccine_name}</span>
-                      <Badge variant="outline" className={status.className}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {status.label}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        {allowEdit && (
+                          <EditVaccinationDialog record={record} onSaved={onRecordUpdated} />
+                        )}
+                        <Badge variant="outline" className={status.className}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {status.label}
+                        </Badge>
+                      </div>
                     </div>
 
                     {record.administered_date && (

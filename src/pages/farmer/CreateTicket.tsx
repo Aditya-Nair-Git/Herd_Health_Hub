@@ -31,6 +31,7 @@ export default function CreateTicketPage() {
   const [activeTicketWarning, setActiveTicketWarning] = useState(false);
   const [formData, setFormData] = useState({
     complaint: '',
+    description: '',
     symptom_1: '',
     symptom_2: '',
     symptom_3: '',
@@ -84,11 +85,14 @@ export default function CreateTicketPage() {
 
     setSubmitting(true);
     const animal = animals.find(a => a.animal_id === selectedAnimal);
+    const fullComplaint = formData.description
+      ? `${formData.complaint.trim()}\n\n${formData.description.trim()}`
+      : formData.complaint.trim();
     const { data: ticketData, error } = await supabase.from('tickets').insert({
       animal_id: selectedAnimal,
       farmer_id: user?.id,
       farmer_name: animal?.farmer_name || profile?.full_name || '',
-      complaint: formData.complaint.trim(),
+      complaint: fullComplaint,
       symptom_1: formData.symptom_1 || null,
       symptom_2: formData.symptom_2 || null,
       symptom_3: formData.symptom_3 || null,
@@ -180,9 +184,19 @@ export default function CreateTicketPage() {
             <div className="space-y-2">
               <Label>Complaint Description *</Label>
               <Textarea
-                placeholder="Describe the issue with your animal..."
+                placeholder="Briefly describe the main issue..."
                 value={formData.complaint}
                 onChange={(e) => setFormData(prev => ({ ...prev, complaint: e.target.value }))}
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Additional Details</Label>
+              <Textarea
+                placeholder="Provide more details, e.g., when it started, any changes in behavior..."
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
               />
             </div>
