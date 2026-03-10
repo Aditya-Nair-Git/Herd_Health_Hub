@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PawPrint } from 'lucide-react';
 import { z } from 'zod';
+import { getBreedsForSpecies } from '@/lib/breeds';
 
 const animalSchema = z.object({
   species: z.string().min(1, 'Species is required'),
@@ -28,6 +29,7 @@ export default function RegisterAnimal() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [breedMode, setBreedMode] = useState<'select' | 'manual'>('select');
 
   const [formData, setFormData] = useState({
     species: 'Cattle',
@@ -37,6 +39,22 @@ export default function RegisterAnimal() {
     milk_production_status: '' as 'Producing' | 'Not Producing' | 'Dry' | 'N/A' | '',
     previous_disease_history: '',
   });
+
+  const breedOptions = getBreedsForSpecies(formData.species);
+
+  const handleSpeciesChange = (value: string) => {
+    setFormData({ ...formData, species: value, breed: '' });
+    setBreedMode('select');
+  };
+
+  const handleBreedChange = (value: string) => {
+    if (value === '__other__') {
+      setBreedMode('manual');
+      setFormData({ ...formData, breed: '' });
+    } else {
+      setFormData({ ...formData, breed: value });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,11 +95,7 @@ export default function RegisterAnimal() {
       .single();
 
     if (animalError) {
-      toast({
-        title: 'Error',
-        description: 'Failed to register animal. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to register animal. Please try again.', variant: 'destructive' });
       setLoading(false);
       return;
     }
@@ -96,11 +110,7 @@ export default function RegisterAnimal() {
       farmer_id: user?.id,
     });
 
-    toast({
-      title: 'Animal Registered',
-      description: 'Your animal has been successfully registered.',
-    });
-
+    toast({ title: 'Animal Registered', description: 'Your animal has been successfully registered.' });
     navigate('/farmer/animals');
     setLoading(false);
   };
@@ -114,22 +124,15 @@ export default function RegisterAnimal() {
               <PawPrint className="w-8 h-8 text-primary" />
             </div>
             <CardTitle className="text-2xl font-heading">Register New Animal</CardTitle>
-            <CardDescription>
-              Enter the details of your animal for health tracking
-            </CardDescription>
+            <CardDescription>Enter the details of your animal for health tracking</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="species">Species *</Label>
-                  <Select 
-                    value={formData.species} 
-                    onValueChange={(value) => setFormData({ ...formData, species: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select species" />
-                    </SelectTrigger>
+                  <Select value={formData.species} onValueChange={handleSpeciesChange}>
+                    <SelectTrigger><SelectValue placeholder="Select species" /></SelectTrigger>
                     <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="Cattle">Cattle</SelectItem>
                       <SelectItem value="Buffalo">Buffalo</SelectItem>
@@ -142,23 +145,38 @@ export default function RegisterAnimal() {
 
                 <div className="space-y-2">
                   <Label htmlFor="breed">Breed</Label>
-                  <Input
-                    id="breed"
-                    placeholder="e.g., Holstein, Jersey"
-                    value={formData.breed}
-                    onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
-                  />
+                  {breedMode === 'select' && breedOptions.length > 0 ? (
+                    <Select value={formData.breed} onValueChange={handleBreedChange}>
+                      <SelectTrigger><SelectValue placeholder="Select breed" /></SelectTrigger>
+                      <SelectContent className="bg-background border shadow-lg z-50">
+                        {breedOptions.map(b => (
+                          <SelectItem key={b} value={b}>{b}</SelectItem>
+                        ))}
+                        <SelectItem value="__other__">Other (manual entry)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        id="breed"
+                        placeholder="Enter breed name"
+                        value={formData.breed}
+                        onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                        className="flex-1"
+                      />
+                      {breedOptions.length > 0 && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => { setBreedMode('select'); setFormData({ ...formData, breed: '' }); }}>
+                          List
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="sex">Sex *</Label>
-                  <Select 
-                    value={formData.sex} 
-                    onValueChange={(value: 'Male' | 'Female') => setFormData({ ...formData, sex: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sex" />
-                    </SelectTrigger>
+                  <Select value={formData.sex} onValueChange={(value: 'Male' | 'Female') => setFormData({ ...formData, sex: value })}>
+                    <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
                     <SelectContent className="bg-background border shadow-lg z-50">
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
@@ -169,28 +187,16 @@ export default function RegisterAnimal() {
 
                 <div className="space-y-2">
                   <Label htmlFor="age">Age (years)</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min="0"
-                    placeholder="Enter age"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                  />
+                  <Input id="age" type="number" min="0" placeholder="Enter age" value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="milk_production">Milk Production Status</Label>
-                <Select 
-                  value={formData.milk_production_status} 
-                  onValueChange={(value: 'Producing' | 'Not Producing' | 'Dry' | 'N/A') => 
-                    setFormData({ ...formData, milk_production_status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
+                <Select value={formData.milk_production_status}
+                  onValueChange={(value: 'Producing' | 'Not Producing' | 'Dry' | 'N/A') => setFormData({ ...formData, milk_production_status: value })}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg z-50">
                     <SelectItem value="Producing">Producing</SelectItem>
                     <SelectItem value="Not Producing">Not Producing</SelectItem>
@@ -202,13 +208,9 @@ export default function RegisterAnimal() {
 
               <div className="space-y-2">
                 <Label htmlFor="disease_history">Previous Disease History</Label>
-                <Textarea
-                  id="disease_history"
-                  placeholder="Enter any previous diseases or health issues"
+                <Textarea id="disease_history" placeholder="Enter any previous diseases or health issues"
                   value={formData.previous_disease_history}
-                  onChange={(e) => setFormData({ ...formData, previous_disease_history: e.target.value })}
-                  rows={3}
-                />
+                  onChange={(e) => setFormData({ ...formData, previous_disease_history: e.target.value })} rows={3} />
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

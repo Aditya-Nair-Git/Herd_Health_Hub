@@ -5,14 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { useVetSlots, type VetSlot } from '@/hooks/useVetSlots';
+import { CreateSlotDialog } from '@/components/vet-slots/CreateSlotDialog';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Calendar, Loader2, ChevronLeft, ChevronRight, 
-  User
+  User, Trash2
 } from 'lucide-react';
 
 export default function VetSchedule() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const currentDate = new Date(selectedDate);
@@ -23,7 +27,7 @@ export default function VetSchedule() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { slots: allSlots, loading } = useVetSlots({
+  const { slots: allSlots, loading, refetch } = useVetSlots({
     vetId: user?.id,
     dateFrom: startOfWeek.toISOString().split('T')[0],
     dateTo: endOfWeek.toISOString().split('T')[0],
@@ -43,6 +47,16 @@ export default function VetSchedule() {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     setSelectedDate(newDate.toISOString().split('T')[0]);
+  };
+
+  const handleRemoveAvailability = async (slotId: string) => {
+    const { error } = await supabase.from('vet_slots').delete().eq('id', slotId);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to remove availability', variant: 'destructive' });
+    } else {
+      toast({ title: 'Removed', description: 'Availability date removed.' });
+      refetch();
+    }
   };
 
   const slotsByDate: Record<string, VetSlot[]> = {};
@@ -69,9 +83,12 @@ export default function VetSchedule() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-heading font-bold">My Appointments</h1>
-          <p className="text-muted-foreground mt-1">View your assigned appointments</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-heading font-bold">My Schedule</h1>
+            <p className="text-muted-foreground mt-1">Manage your availability and view appointments</p>
+          </div>
+          <CreateSlotDialog vetId={user?.id || ''} onSlotCreated={refetch} />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -146,6 +163,16 @@ export default function VetSchedule() {
                               )}>
                                 {slot.status === 'available' ? 'Free' : 'Booked'}
                               </Badge>
+                              {slot.status === 'available' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5"
+                                  onClick={(e) => { e.preventDefault(); handleRemoveAvailability(slot.id); }}
+                                >
+                                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                                </Button>
+                              )}
                             </div>
                             {slot.status === 'booked' && slot.tickets && (
                               <div className="mt-1 p-1 rounded bg-card/80">
