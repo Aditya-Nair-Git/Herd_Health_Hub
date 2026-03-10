@@ -181,9 +181,19 @@ export default function CreateTicketPage() {
             <div className="space-y-2">
               <Label>Complaint Description *</Label>
               <Textarea
-                placeholder="Describe the issue with your animal..."
+                placeholder="Briefly describe the main issue..."
                 value={formData.complaint}
                 onChange={(e) => setFormData(prev => ({ ...prev, complaint: e.target.value }))}
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Additional Details</Label>
+              <Textarea
+                placeholder="Provide more details, e.g., when it started, any changes in behavior..."
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
               />
             </div>

@@ -118,7 +118,7 @@ export function useTickets(options: UseTicketsOptions = {}) {
   const scheduledTickets = tickets.filter(t => t.status === 'scheduled');
   const inProgressTickets = tickets.filter(t => t.status === 'in_progress');
   const completedTickets = tickets.filter(t => t.status === 'completed');
-  const emergencyTickets = tickets.filter(t => t.priority === 'emergency' && !['completed', 'cancelled'].includes(t.status));
+  const emergencyTickets = tickets.filter(t => t.priority === 'emergency' && t.status === 'created');
 
   return { 
     tickets, 
