@@ -172,7 +172,7 @@ export default function AnimalProfile() {
       symptom_1: editSymptoms.symptom_1 || null,
       symptom_2: editSymptoms.symptom_2 || null,
       symptom_3: editSymptoms.symptom_3 || null,
-      notes: 'Symptom update',
+      notes: editSymptoms.description || 'Symptom update',
     });
 
     toast({
