@@ -555,21 +555,51 @@ export default function AnimalProfile() {
                 <CardTitle className="text-lg">Vaccination</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
-                  {animal.vaccination_status === 'Up to date' ? (
-                    <CheckCircle className="w-8 h-8 text-success" />
-                  ) : (
+                {vaccinationRecords.length > 0 ? (() => {
+                  const latestCompleted = vaccinationRecords.find(r => r.vaccination_status === 'completed');
+                  const latestScheduled = vaccinationRecords.find(r => r.vaccination_status === 'scheduled');
+                  const latestRecord = latestCompleted || vaccinationRecords[0];
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        {latestRecord.vaccination_status === 'completed' ? (
+                          <CheckCircle className="w-8 h-8 text-success" />
+                        ) : (
+                          <AlertTriangle className="w-8 h-8 text-warning" />
+                        )}
+                        <div>
+                          <p className="font-medium capitalize">{latestRecord.vaccination_status}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {latestRecord.vaccine_name}
+                          </p>
+                          {latestRecord.administered_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Date: {new Date(latestRecord.administered_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {latestScheduled && latestScheduled !== latestRecord && (
+                        <div className="mt-2 p-2 rounded bg-warning/10 text-sm">
+                          <p className="font-medium text-warning-foreground">Upcoming: {latestScheduled.vaccine_name}</p>
+                          {latestScheduled.next_due_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Due: {new Date(latestScheduled.next_due_date).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })() : (
+                  <div className="flex items-center gap-3">
                     <AlertTriangle className="w-8 h-8 text-warning" />
-                  )}
-                  <div>
-                    <p className="font-medium">{animal.vaccination_status || 'Not recorded'}</p>
-                    {animal.last_vaccination_date && (
-                      <p className="text-sm text-muted-foreground">
-                        Last: {new Date(animal.last_vaccination_date).toLocaleDateString()}
-                      </p>
-                    )}
+                    <div>
+                      <p className="font-medium">Not recorded</p>
+                      <p className="text-sm text-muted-foreground">No vaccination records found</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
