@@ -369,16 +369,16 @@ export default function AnimalProfile() {
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Edit className="w-4 h-4 mr-2" />
-                      Update Symptoms
+                      Report Health Issue
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Update Symptoms</DialogTitle>
+                      <DialogTitle>Report Health Issue</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <p className="text-sm text-muted-foreground">
-                        Select up to 3 symptoms your animal is currently showing
+                        Report symptoms and describe the health issue your animal is experiencing
                       </p>
                       <div className="space-y-3">
                         <div className="space-y-2">
@@ -406,9 +406,18 @@ export default function AnimalProfile() {
                           />
                         </div>
                       </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          placeholder="Describe the issue in detail, e.g., when it started, any changes in behavior..."
+                          value={editSymptoms.description}
+                          onChange={(e) => setEditSymptoms(prev => ({ ...prev, description: e.target.value }))}
+                          rows={3}
+                        />
+                      </div>
                       <Button onClick={handleSaveSymptoms} className="w-full" disabled={savingSymptoms}>
                         {savingSymptoms ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Save Symptoms
+                        Submit Report
                       </Button>
                     </div>
                   </DialogContent>
