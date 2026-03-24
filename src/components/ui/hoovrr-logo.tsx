@@ -14,7 +14,7 @@ const sizeMap = {
 export function HoovrrLogo({ className, size = 'md' }: HoovrrLogoProps) {
   return (
     <img
-      src="/hoovrr-logo.png"
+      src="/favicon.png"
       alt="Hoovrr"
       className={cn(sizeMap[size], 'object-contain', className)}
     />
