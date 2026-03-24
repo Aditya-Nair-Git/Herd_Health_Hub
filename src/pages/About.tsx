@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { PawPrint, ArrowLeft, Eye, Code2 } from 'lucide-react';
+import { ArrowLeft, Eye, Code2 } from 'lucide-react';
+import { HoovrrLogo } from '@/components/ui/hoovrr-logo';
 
 export default function About() {
   const developers = [
@@ -29,7 +30,7 @@ export default function About() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <PawPrint className="w-5 h-5 text-primary-foreground" />
+              <HoovrrLogo size="sm" />
             </div>
             <span className="font-heading font-bold text-xl">Hoovrr</span>
           </Link>

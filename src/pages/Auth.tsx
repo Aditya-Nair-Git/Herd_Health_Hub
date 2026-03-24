@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PawPrint, ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { HoovrrLogo } from '@/components/ui/hoovrr-logo';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -128,7 +129,7 @@ export default function Auth() {
         <Card className="w-full max-w-md shadow-card border-border/50 animate-fade-in">
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-hero flex items-center justify-center shadow-lg">
-              <PawPrint className="w-8 h-8 text-primary-foreground" />
+              <HoovrrLogo size="md" />
             </div>
             <div>
               <CardTitle className="text-2xl font-heading">Hoovrr</CardTitle>

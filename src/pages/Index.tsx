@@ -11,6 +11,7 @@ import {
   Activity,
   Users
 } from 'lucide-react';
+import { HoovrrLogo } from '@/components/ui/hoovrr-logo';
 
 export default function Index() {
   const features = [
@@ -46,7 +47,7 @@ export default function Index() {
         <nav className="relative z-10 container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
-              <PawPrint className="w-5 h-5 text-primary-foreground" />
+              <HoovrrLogo size="sm" />
             </div>
             <span className="font-heading font-bold text-xl text-primary-foreground">Hoovrr</span>
           </div>
