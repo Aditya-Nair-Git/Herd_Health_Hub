@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, ArrowLeft, Loader2 } from 'lucide-react';
+import { HoovrrLogo } from '@/components/ui/hoovrr-logo';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -90,7 +91,7 @@ export default function AdminAuth() {
         <Card className="w-full max-w-md shadow-card border-border/50 animate-fade-in">
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-hero flex items-center justify-center shadow-lg">
-              <Shield className="w-8 h-8 text-primary-foreground" />
+              <HoovrrLogo size="md" />
             </div>
             <div>
               <CardTitle className="text-2xl font-heading">Admin Portal</CardTitle>
