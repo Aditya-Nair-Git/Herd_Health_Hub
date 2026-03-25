@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface FarmerInfo {
   user_id: string;
@@ -16,6 +19,21 @@ interface FarmerInfo {
 export default function AdminFarmers() {
   const [farmers, setFarmers] = useState<FarmerInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeleting(userId);
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: userId },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || 'Failed to delete user');
+    } else {
+      toast.success('User deleted successfully');
+      setFarmers((prev) => prev.filter((f) => f.user_id !== userId));
+    }
+    setDeleting(null);
+  };
 
   useEffect(() => {
     fetchFarmers();
@@ -85,7 +103,8 @@ export default function AdminFarmers() {
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Address</TableHead>
-                  <TableHead>Registered</TableHead>
+                 <TableHead>Registered</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -96,6 +115,27 @@ export default function AdminFarmers() {
                     <TableCell className="max-w-[200px] truncate">{farmer.address || '—'}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(farmer.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm" disabled={deleting === farmer.user_id}>
+                            {deleting === farmer.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete {farmer.full_name}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this farmer and all their animals, tickets, and related data. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteUser(farmer.user_id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
