@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Stethoscope, Calendar } from 'lucide-react';
+import { Loader2, Stethoscope, Calendar, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface VetInfo {
   user_id: string;
@@ -17,6 +20,21 @@ interface VetInfo {
 export default function AdminVets() {
   const [vets, setVets] = useState<VetInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeleting(userId);
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: userId },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || 'Failed to delete vet');
+    } else {
+      toast.success('Vet deleted successfully');
+      setVets((prev) => prev.filter((v) => v.user_id !== userId));
+    }
+    setDeleting(null);
+  };
 
   useEffect(() => {
     fetchVets();
@@ -120,6 +138,28 @@ export default function AdminVets() {
                           No upcoming dates
                         </Badge>
                       )}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm" className="w-full" disabled={deleting === vet.user_id}>
+                            {deleting === vet.user_id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                            Delete Vet
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Dr. {vet.full_name}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this veterinarian and all their related records. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteUser(vet.user_id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </CardContent>
                 </Card>

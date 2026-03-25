@@ -55,6 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: '/admin/tickets', label: 'Manage Tickets', icon: ClipboardList },
     { href: '/admin/vets', label: 'Working Vets', icon: Stethoscope },
     { href: '/admin/farmers', label: 'Registered Farmers', icon: Users },
+    { href: '/admin/animals', label: 'Manage Animals', icon: PawPrint },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
