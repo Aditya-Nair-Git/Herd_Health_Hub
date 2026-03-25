@@ -27,7 +27,7 @@ export default function AdminFarmers() {
       body: { user_id: userId },
     });
     if (error || data?.error) {
-      toast.error(data?.error || 'Failed to delete user');
+      toast.error(data?.error || error?.message || 'Failed to delete user');
     } else {
       toast.success('User deleted successfully');
       setFarmers((prev) => prev.filter((f) => f.user_id !== userId));

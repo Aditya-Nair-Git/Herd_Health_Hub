@@ -36,6 +36,15 @@ Deno.serve(async (req) => {
     // Use service role client for cascade deletion
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    // Helper to delete and log errors
+    const safeDelete = async (label: string, promise: Promise<any>) => {
+      const { error } = await promise;
+      if (error) {
+        console.error(`[${label}] ${error.message}`);
+        throw new Error(`Failed at ${label}: ${error.message}`);
+      }
+    };
+
     // 1. Get animal IDs owned by this user
     const { data: animals } = await admin
       .from("animals")
@@ -52,8 +61,8 @@ Deno.serve(async (req) => {
 
     // Delete in dependency order
     if (ticketIds.length > 0) {
-      await admin.from("ticket_symptoms").delete().in("ticket_id", ticketIds);
-      
+      await safeDelete("ticket_symptoms", admin.from("ticket_symptoms").delete().in("ticket_id", ticketIds));
+
       // prediction_symptoms via prediction_results
       const { data: preds } = await admin
         .from("prediction_results")
@@ -61,52 +70,69 @@ Deno.serve(async (req) => {
         .in("ticket_id", ticketIds);
       const predIds = (preds || []).map((p: any) => p.id);
       if (predIds.length > 0) {
-        await admin.from("prediction_symptoms").delete().in("prediction_id", predIds);
+        await safeDelete("prediction_symptoms", admin.from("prediction_symptoms").delete().in("prediction_id", predIds));
       }
-      await admin.from("prediction_results").delete().in("ticket_id", ticketIds);
-      await admin.from("ticket_messages").delete().in("ticket_id", ticketIds);
+      await safeDelete("prediction_results", admin.from("prediction_results").delete().in("ticket_id", ticketIds));
+      await safeDelete("ticket_messages", admin.from("ticket_messages").delete().in("ticket_id", ticketIds));
     }
+
+    // weight_adjustments (no direct FK to user, but clean up if needed)
+    // These are not directly tied to user, skip
 
     if (animalIds.length > 0) {
-      await admin.from("active_medications").delete().in("animal_id", animalIds);
-      await admin.from("treatment_records").delete().in("animal_id", animalIds);
-      await admin.from("vaccination_history").delete().in("animal_id", animalIds);
-      await admin.from("vet_entries").delete().in("animal_id", animalIds);
-      await admin.from("farmer_entries").delete().in("animal_id", animalIds);
-      await admin.from("vet_notes").delete().in("animal_id", animalIds);
-      await admin.from("schedules").delete().in("animal_id", animalIds);
+      await safeDelete("active_medications", admin.from("active_medications").delete().in("animal_id", animalIds));
+      await safeDelete("treatment_records", admin.from("treatment_records").delete().in("animal_id", animalIds));
+      await safeDelete("vaccination_history", admin.from("vaccination_history").delete().in("animal_id", animalIds));
+      await safeDelete("vet_entries", admin.from("vet_entries").delete().in("animal_id", animalIds));
+      await safeDelete("farmer_entries", admin.from("farmer_entries").delete().in("animal_id", animalIds));
+      await safeDelete("vet_notes", admin.from("vet_notes").delete().in("animal_id", animalIds));
+      await safeDelete("schedules_by_animal", admin.from("schedules").delete().in("animal_id", animalIds));
     }
 
-    // Unlink vet_slots assigned tickets before deleting tickets
+    // Nullify assigned_slot_id on tickets before deleting vet_slots
     if (ticketIds.length > 0) {
-      await admin
-        .from("vet_slots")
-        .update({ assigned_ticket_id: null, status: "available" })
-        .in("assigned_ticket_id", ticketIds);
+      await safeDelete("nullify_ticket_slot_refs",
+        admin.from("tickets").update({ assigned_slot_id: null }).in("id", ticketIds).not("assigned_slot_id", "is", null)
+      );
     }
 
-    // scheduling_log
-    await admin.from("scheduling_log").delete().eq("performed_by_id", user_id);
+    // Delete scheduling_log entries that reference slots or tickets being deleted
+    if (ticketIds.length > 0) {
+      await safeDelete("scheduling_log_by_ticket", admin.from("scheduling_log").delete().in("ticket_id", ticketIds));
+    }
+
+    // Get vet_slots linked to these tickets so we can clean scheduling_log refs
+    if (ticketIds.length > 0) {
+      const { data: linkedSlots } = await admin.from("vet_slots").select("id").in("assigned_ticket_id", ticketIds);
+      const linkedSlotIds = (linkedSlots || []).map((s: any) => s.id);
+      if (linkedSlotIds.length > 0) {
+        await safeDelete("scheduling_log_by_slot", admin.from("scheduling_log").delete().in("slot_id", linkedSlotIds));
+      }
+      await safeDelete("delete_linked_vet_slots", admin.from("vet_slots").delete().in("assigned_ticket_id", ticketIds));
+    }
+
+    // remaining scheduling_log by user
+    await safeDelete("scheduling_log", admin.from("scheduling_log").delete().eq("performed_by_id", user_id));
 
     // vet_slots owned by this user
-    await admin.from("vet_slots").delete().eq("vet_id", user_id);
+    await safeDelete("vet_slots", admin.from("vet_slots").delete().eq("vet_id", user_id));
 
     // schedules where user is vet or farmer
-    await admin.from("schedules").delete().or(`vet_id.eq.${user_id},farmer_id.eq.${user_id}`);
+    await safeDelete("schedules_by_user", admin.from("schedules").delete().or(`vet_id.eq.${user_id},farmer_id.eq.${user_id}`));
 
     // tickets
     if (ticketIds.length > 0) {
-      await admin.from("tickets").delete().in("id", ticketIds);
+      await safeDelete("tickets", admin.from("tickets").delete().in("id", ticketIds));
     }
 
     // animals
     if (animalIds.length > 0) {
-      await admin.from("animals").delete().in("animal_id", animalIds);
+      await safeDelete("animals", admin.from("animals").delete().in("animal_id", animalIds));
     }
 
     // profiles & roles
-    await admin.from("profiles").delete().eq("user_id", user_id);
-    await admin.from("user_roles").delete().eq("user_id", user_id);
+    await safeDelete("profiles", admin.from("profiles").delete().eq("user_id", user_id));
+    await safeDelete("user_roles", admin.from("user_roles").delete().eq("user_id", user_id));
 
     // Delete auth user
     const { error: authError } = await admin.auth.admin.deleteUser(user_id);
@@ -116,6 +142,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    console.error("Delete user error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
