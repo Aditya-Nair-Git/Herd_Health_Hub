@@ -96,14 +96,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Delete vet_slots that reference these tickets (avoid trigger issues)
+    // Delete scheduling_log entries that reference slots or tickets being deleted
     if (ticketIds.length > 0) {
-      await safeDelete("delete_linked_vet_slots",
-        admin.from("vet_slots").delete().in("assigned_ticket_id", ticketIds)
-      );
+      await safeDelete("scheduling_log_by_ticket", admin.from("scheduling_log").delete().in("ticket_id", ticketIds));
     }
 
-    // scheduling_log
+    // Get vet_slots linked to these tickets so we can clean scheduling_log refs
+    if (ticketIds.length > 0) {
+      const { data: linkedSlots } = await admin.from("vet_slots").select("id").in("assigned_ticket_id", ticketIds);
+      const linkedSlotIds = (linkedSlots || []).map((s: any) => s.id);
+      if (linkedSlotIds.length > 0) {
+        await safeDelete("scheduling_log_by_slot", admin.from("scheduling_log").delete().in("slot_id", linkedSlotIds));
+      }
+      await safeDelete("delete_linked_vet_slots", admin.from("vet_slots").delete().in("assigned_ticket_id", ticketIds));
+    }
+
+    // remaining scheduling_log by user
     await safeDelete("scheduling_log", admin.from("scheduling_log").delete().eq("performed_by_id", user_id));
 
     // vet_slots owned by this user
