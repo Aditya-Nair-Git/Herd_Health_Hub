@@ -96,12 +96,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Unlink vet_slots assigned tickets before deleting tickets
+    // Delete vet_slots that reference these tickets (avoid trigger issues)
     if (ticketIds.length > 0) {
-      await safeDelete("unlink_vet_slots",
-        admin.from("vet_slots")
-          .update({ assigned_ticket_id: null, status: "available" })
-          .in("assigned_ticket_id", ticketIds)
+      await safeDelete("delete_linked_vet_slots",
+        admin.from("vet_slots").delete().in("assigned_ticket_id", ticketIds)
       );
     }
 
