@@ -1,7 +1,5 @@
 # Herd Health Hub
 
-Here is a single, clean prompt you can paste into Lovable to generate the full end-to-end app:
-
 ---
 
 Build a full-stack web application called **Cattle Health Management System** with a clean green agriculture-themed UI.
@@ -106,21 +104,7 @@ Generate:
 
 Build it as a complete production-ready web app.
 
-This project was built with [Lovable](https://lovable.dev).
-
 **Live app**: https://herd-healer-pro.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/a40e270d-be5e-4f44-8980-246948e98574).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
 git clone <this-repository-url>
