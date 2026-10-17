@@ -14,18 +14,6 @@ A full-stack platform for managing cattle health, connecting farmers and veterin
 </p>
 
 ---
-
-
-
-
-
-https://github.com/user-attachments/assets/c2c87f8b-fb2b-42a2-9b55-7b13abd5425d
-
-
-
-
-
-
 ## 📽️ Project Demo
 
 <!-- Replace this comment with your uploaded GitHub video URL or add screenshots below. -->
@@ -35,6 +23,11 @@ https://github.com/user-attachments/assets/c2c87f8b-fb2b-42a2-9b55-7b13abd5425d
     <img src="https://img.shields.io/badge/▶_Explore_the_Live_Demo-Visit_Application-228B22?style=for-the-badge" alt="Explore live application"/>
   </a>
 </p>
+
+
+https://github.com/user-attachments/assets/c2c87f8b-fb2b-42a2-9b55-7b13abd5425d
+
+
 
 ---
 
