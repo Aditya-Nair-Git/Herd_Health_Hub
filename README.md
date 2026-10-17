@@ -4,6 +4,15 @@
 
 Build a full-stack web application called **Cattle Health Management System** with a clean green agriculture-themed UI.
 
+
+
+
+
+https://github.com/user-attachments/assets/188f775e-d05b-4225-86e1-77b099ae39bb
+
+
+
+
 The system has 3 user roles: **Farmer, Vet, Admin**.
 
 ### Database (use exactly these 3 tables and fields)
