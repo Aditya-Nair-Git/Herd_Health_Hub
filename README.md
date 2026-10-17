@@ -2,7 +2,6 @@
 ### Cattle Health Management System
 
 A full-stack platform for managing cattle health, connecting farmers and veterinarians, and keeping animal medical records, diagnoses, medication and follow-ups organised.
-
 <p align="center">
   <a href="https://herd-healer-pro.lovable.app"><strong>🌱 Open Live Application →</strong></a>
 </p>
@@ -15,6 +14,17 @@ A full-stack platform for managing cattle health, connecting farmers and veterin
 </p>
 
 ---
+
+
+
+
+
+https://github.com/user-attachments/assets/c2c87f8b-fb2b-42a2-9b55-7b13abd5425d
+
+
+
+
+
 
 ## 📽️ Project Demo
 
