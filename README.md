@@ -1,179 +1,295 @@
 # 🌿 Herd Health Hub
-### 🐄 Cattle Health Management System
+### Cattle Health Management System
 
-**Smarter livestock care. Healthier herds. Better decisions.**
-
-A full-stack cattle health management platform designed to connect farmers and veterinarians through animal registration, medical records, disease diagnosis, medication tracking, and follow-up management.
+A full-stack platform for managing cattle health, connecting farmers and veterinarians, and keeping animal medical records, diagnoses, medication and follow-ups organised.
 
 <p align="center">
-  <a href="https://herd-healer-pro.lovable.app">
-    <img src="https://img.shields.io/badge/🚀_LIVE_DEMO-Visit_Herd_Health_Hub-16A34A?style=for-the-badge" alt="Live Demo"/>
-  </a>
+  <a href="https://herd-healer-pro.lovable.app"><strong>🌱 Open Live Application →</strong></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-Frontend-61DAFB?style=flat-square&logo=react&logoColor=black"/>
-  <img src="https://img.shields.io/badge/TypeScript-Type_Safe-3178C6?style=flat-square&logo=typescript&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Supabase-Backend-3FCF8E?style=flat-square&logo=supabase&logoColor=white"/>
-  <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=flat-square&logo=postgresql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Status-Project_Demo-22C55E?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Frontend-React_+_TypeScript-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Backend-Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Styling-Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
 </p>
 
 ---
 
-## 🌱 Project Overview
+## 📽️ Project Demo
 
-Herd Health Hub is designed to streamline cattle healthcare by bringing animal records, veterinary consultations, disease information, medication details, and follow-up tracking into one centralised platform.
+<!-- Replace this comment with your uploaded GitHub video URL or add screenshots below. -->
 
-The system provides role-based portals for farmers and veterinarians, helping organise health information and make animal medical histories easier to access.
+<p align="center">
+  <a href="https://herd-healer-pro.lovable.app">
+    <img src="https://img.shields.io/badge/▶_Explore_the_Live_Demo-Visit_Application-228B22?style=for-the-badge" alt="Explore live application"/>
+  </a>
+</p>
 
-## ✨ Key Features
+---
 
-| 🌟 Feature | 📝 Description |
+## 🌱 What the system does
+
+Herd Health Hub brings animal registration, health records, veterinary visits, medication and follow-up tracking into a single system.
+
+The application is organised around three roles: **Farmer, Veterinarian and Administrator**.
+
+| Module | Capabilities |
 |:--|:--|
-| 👨‍🌾 Farmer Portal | Register cattle, manage animal profiles, and review health records. |
-| 🩺 Veterinary Portal | Search animals, record consultations, and update diagnoses. |
-| 🐄 Animal Management | Maintain animal identification, breed, age, sex, temperature, and milk-production status. |
-| 🔬 Disease Records | Record symptoms, disease diagnoses, and previous disease history. |
-| 💊 Medication Tracking | Document prescribed medication and continuing treatment. |
-| 🔔 Follow-up Management | Highlight animals requiring follow-up care. |
-| 💉 Vaccination Tracking | Display vaccination status and upcoming vaccination needs where supported by the implementation. |
-| 📊 Dashboards | Present animal summaries, veterinary cases, alerts, and health information. |
-| 🔐 Role-Based Access | Separate farmer and veterinary workflows with authentication. |
-| 📱 Responsive Interface | Agriculture-inspired green UI designed for different screen sizes. |
+| 👨‍🌾 Farmer Portal | Animal registration, personal animal records, health summaries, alerts and follow-up information |
+| 🩺 Veterinary Portal | Animal search, medical history, examination records, diagnosis and medication management |
+| 🛡️ Admin Portal *(optional)* | Manage farmers and vets, view records, and access reports and analytics |
 
-## 👥 User Roles
+## ✨ Features
 
-### 👨‍🌾 Farmer
-- Register new animals and maintain animal information.
-- View registered animals and their medical history.
-- Review symptoms, diagnoses, medication, and follow-up status.
-- Monitor relevant health alerts and vaccination information.
+### 👨‍🌾 Farmer Portal
 
-### 🩺 Veterinarian
-- Search for an animal using its ID.
-- Review the combined animal medical record.
-- Record symptoms, predicted diagnosis, and veterinary diagnosis.
-- Prescribe medication and update continuing-treatment and follow-up information.
+- **Dashboard** — Summary cards, health alerts, follow-ups and vaccination status.
+- **Register New Animal** — Capture animal details, symptoms and health information.
+- **My Animals** — Browse registered cattle and access individual records.
+- **Animal Profile** — View medical history, symptoms, diagnosis, prescribed medication and follow-up status.
 
-### 🛡️ Administrator *(if enabled)*
-- Manage farmer and veterinarian accounts.
-- View animal records.
-- Review system-wide reports and analytics.
+### 🩺 Veterinary Portal
+
+- **Vet Dashboard** — Overview of today's cases, follow-ups, continuing medication and vaccination due.
+- **Search Animal** — Find an animal using its unique `animal_id`.
+- **Medical Record** — View animal information alongside farmer-reported and veterinary-entered data.
+- **Add / Update Visit** — Record examination details, predicted diagnosis, vet diagnosis, prescribed medication and follow-up requirements.
+- **Treatment Tracking** — Mark whether medication is continuing and record the medicine prescribed.
+
+### 🛡️ Administration *(optional)*
+
+- Manage veterinarian and farmer accounts.
+- View animal records across the system.
+- Review reports and health analytics.
+
+### 🔎 Health Monitoring
+
+- Disease diagnosis and previous disease history.
+- Body temperature and symptom tracking.
+- Follow-up and continuing-medication indicators.
+- Vaccination information and due-status visibility.
+- Role-based navigation and responsive dashboards.
+
+*Feature availability depends on the current application implementation.*
+
+---
 
 ## 🗄️ Database Design
 
-The requested data model contains three principal tables linked through `animal_id`.
+The requested data model uses three principal tables connected through `animal_id`.
 
-```text
-                  ┌──────────────────────┐
-                  │     Master Table     │
-                  │----------------------│
-                  │ animal_id (PK)       │
-                  │ animal information   │
-                  │ disease diagnosis    │
-                  │ follow-up / medicine │
-                  │ vet_id               │
-                  └──────────┬───────────┘
-                             │
-                  ┌──────────┴───────────┐
-                  │                      │
-        ┌─────────▼────────┐   ┌─────────▼─────────┐
-        │   Farmer Entry   │   │     Vet Entry     │
-        │------------------│   │-------------------│
-        │ animal_id (FK)   │   │ animal_id (FK)    │
-        │ animal details   │   │ symptoms          │
-        │ health history   │   │ predicted diagnosis│
-        │ reported symptoms│   │ vet diagnosis      │
-        └──────────────────┘   │ medication details │
-                               └────────────────────┘
+```mermaid
+erDiagram
+    MASTER ||--o{ VET_ENTRY : has
+    MASTER ||--o| FARMER_ENTRY : has
+
+    MASTER {
+        string animal_id PK
+        string species
+        string breed
+        string sex
+        int age
+        float body_temperature
+        string milk_production_status
+        string previous_disease_history
+        string symptom_1
+        string symptom_2
+        string symptom_3
+        string disease_diagnosis
+        string follow_up
+        string prescribed_medication
+        string farmer_name
+        string vet_id
+    }
+
+    VET_ENTRY {
+        string animal_id FK
+        string species
+        float body_temperature
+        string symptom_1
+        string symptom_2
+        string symptom_3
+        string predicted_diagnosis
+        string vet_diagnosis
+        string continuing_medication
+        string vet_prescribed_medication
+    }
+
+    FARMER_ENTRY {
+        string animal_id FK
+        string species
+        string sex
+        int age
+        string milk_production_status
+        string previous_disease_history
+        string symptom_1
+        string symptom_2
+        string symptom_3
+    }
 ```
 
-### 📋 Master Table
-Stores core animal information, body temperature, symptoms, disease diagnosis, follow-up status, prescribed medication, farmer name, and veterinarian ID.
+### `Master`
 
-### 🧑‍🌾 Farmer Entry
-Stores farmer-reported animal details, previous disease history, milk-production status, and symptoms.
+Stores the main animal record, including identification, breed, age, sex, temperature, milk-production status, previous disease history, symptoms, diagnosis, follow-up, prescribed medication, farmer name and assigned vet ID.
 
-### 🩺 Vet Entry
-Stores veterinary examination details, predicted and confirmed diagnoses, continuing-medication status, and prescribed medication.
+### `Vet Entry`
 
-## 🛠️ Technology Stack
+Stores veterinary examination information, including observed symptoms, predicted diagnosis, veterinary diagnosis, continuing-medication status and prescribed medicine.
 
-| Layer | Technologies |
+### `Farmer Entry`
+
+Stores information reported by the farmer, including animal details, milk-production status, previous disease history and reported symptoms.
+
+### Record relationships
+
+The application joins records using `animal_id` to bring together:
+
+- Core animal information from `Master`.
+- Farmer-reported information from `Farmer Entry`.
+- Veterinary examination and treatment information from `Vet Entry`.
+
+This makes it possible to compare reported symptoms with veterinary findings and review an animal's history in one place.
+
+---
+
+## ⚙️ Backend and API Design
+
+The backend needs to support the following operations.
+
+| Resource | Operations |
 |:--|:--|
-| 🎨 Frontend | React, TypeScript, Vite |
-| 🧩 UI | Tailwind CSS, shadcn/ui |
-| 📈 Visualisation | Recharts |
-| 🗃️ Database | PostgreSQL |
-| 🔐 Authentication | Supabase Auth |
-| ⚡ Backend Services | Supabase Edge Functions |
-| 🔄 Data Updates | Supabase Realtime |
-| ☁️ Development & Hosting | Lovable Cloud |
+| Authentication | Sign in, sign out, session handling and role checks |
+| Animals | Create, list, search, view, update and delete records |
+| Farmer entries | Record and retrieve farmer-reported information |
+| Vet entries | Create and update examination and treatment records |
+| Medical records | Retrieve joined animal, farmer and veterinary data |
+| Follow-ups | Identify records requiring follow-up or continuing medication |
+| Vaccinations | Retrieve vaccination status and upcoming due information |
+| Administration | Manage users, records and reports where enabled |
 
-*Technology descriptions should be adjusted to match the final repository and deployed implementation.*
+The implementation uses Supabase services for database access and authentication, with PostgreSQL for relational data. Supabase Edge Functions can handle server-side operations that require them.
 
-## 🚀 Getting Started
+*These are the intended API capabilities; individual REST endpoints should be documented against the actual routes and functions implemented in the repository.*
+
+---
+
+## 🔐 Authentication and Access
+
+The application provides separate workflows for farmers and veterinarians.
+
+- Farmers access their animal records and farmer-facing features.
+- Veterinarians access search, medical records, examination and treatment workflows.
+- Administrators can access management and reporting features if the optional admin portal is enabled.
+
+Database access policies should enforce the relevant permissions rather than relying solely on hiding frontend navigation items.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|:--|:--|
+| Frontend | React, TypeScript, Vite |
+| UI components | Tailwind CSS, shadcn/ui |
+| Charts | Recharts |
+| Database | PostgreSQL |
+| Authentication | Supabase Auth |
+| Backend services | Supabase Edge Functions |
+| Realtime updates | Supabase Realtime |
+| Development and hosting | Lovable Cloud |
+
+---
+
+## 🚀 Run Locally
 
 ### Prerequisites
 
 - Node.js and npm
 - Git
-- Access to the required backend environment variables and services
+- A configured Supabase project or the backend environment required by the application
 
-### 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Aditya-Nair-Git/Herd_Health_Hub.git
 cd Herd_Health_Hub
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 3. Configure environment variables
 
-Create a `.env` file using the environment-variable names documented by the project. For example:
+Create a local `.env` file using the variable names expected by the codebase. For a typical Supabase frontend, these may resemble:
 
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_publishable_key
 ```
 
-Use the actual variable names required by the codebase. Never commit real credentials or privileged service-role keys.
+Use the exact names required by the project. Never commit credentials, service-role keys or private environment files.
 
-### 4. Start the Development Server
+### 4. Start the development server
 
 ```bash
 npm run dev
 ```
 
-Open the local URL displayed in your terminal.
-
-## 🖥️ Live Application
-
-Explore the deployed application:
-
-**[🌿 Open Herd Health Hub](https://herd-healer-pro.lovable.app)**
-
-## 🔮 Future Improvements
-
-- 📍 Geospatial animal-health monitoring.
-- 📊 Advanced veterinary and disease-trend analytics.
-- 🔔 Automated follow-up and vaccination reminders.
-- 📱 Improved mobile-first workflows.
-- 📄 Exportable animal medical reports.
-- 🧠 Further evaluation of disease decision-support methods.
-
-## 🎯 Project Goal
-
-To make cattle health information easier to organise and access, support veterinary workflows, and help farmers maintain structured records for better livestock care.
+Open the local URL shown in the terminal.
 
 ---
 
+## 📁 Project Structure
+
+A typical structure for this application may look like the following. Adjust it to match the actual repository.
+
+```text
+Herd_Health_Hub/
+├── public/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   │   ├── farmer/
+│   │   ├── vet/
+│   │   └── admin/
+│   ├── hooks/
+│   ├── integrations/
+│   ├── lib/
+│   └── types/
+├── supabase/
+│   ├── functions/
+│   └── migrations/
+├── assets/
+├── .env.example
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+## 🔮 Possible Extensions
+
+- Geographic visualisation of animal-health trends.
+- Automated vaccination and follow-up reminders.
+- More detailed veterinary workload and disease analytics.
+- Exportable animal medical records.
+- Improved mobile workflows for farmers and field veterinarians.
+- Evaluation of additional disease decision-support methods.
+
+---
+
+## 🌾 Project Goal
+
+The aim of Herd Health Hub is to make livestock health information easier to organise, improve access to animal medical histories, and support more consistent coordination between farmers and veterinarians.
+
+**Live application:** [herd-healer-pro.lovable.app](https://herd-healer-pro.lovable.app)
+
 <p align="center">
-  <b>🌿 Herd Health Hub — Supporting healthier herds through connected animal healthcare. 🐄</b>
+  <sub>Herd Health Hub · Cattle Health Management System</sub>
 </p>
